@@ -1,3 +1,4 @@
-int calculate() {
-  return 6 * 7;
-}
+library;
+
+/// Thicket: An experimental persistent world model for LLM-based software engineering agents.
+export 'src/models/models.dart';
