@@ -5,12 +5,7 @@ void main() {
   group('WorldModelEntity', () {
     test('round-trips through JSON', () {
       final now = DateTime.utc(2025, 1, 1);
-      final entity = WorldModelEntity(
-        id: 'test-id',
-        createdAt: now,
-        updatedAt: now,
-        revision: 1,
-      );
+      final entity = WorldModelEntity(id: 'test-id', createdAt: now, updatedAt: now, revision: 1);
 
       final json = entity.toJson();
       final restored = WorldModelEntity.fromJson(json);
@@ -25,11 +20,7 @@ void main() {
   group('ProjectIdentity', () {
     test('round-trips through JSON', () {
       final now = DateTime.utc(2025, 1, 1);
-      final identity = ProjectIdentity(
-        projectId: 'abc-123',
-        projectName: 'My Project',
-        createdAt: now,
-      );
+      final identity = ProjectIdentity(projectId: 'abc-123', projectName: 'My Project', createdAt: now);
 
       final json = identity.toJson();
       final restored = ProjectIdentity.fromJson(json);
