@@ -63,10 +63,13 @@ class JsonRpcTransport {
     Future<void> Function(JsonRpcMessage message) onMessage,
   ) async {
     await for (final line in _input) {
-      if (line.trim().isEmpty) continue;
+      if (line.trim().isEmpty) {
+        continue;
+      }
 
       try {
-        final json = jsonDecode(line) as Map<String, dynamic>;
+        final Map<String, dynamic> json = jsonDecode(line) as Map<String, dynamic>;
+
         await onMessage(JsonRpcMessage(json));
       } on FormatException {
         sendError(null, -32700, 'Parse error');
@@ -90,13 +93,15 @@ class JsonRpcTransport {
     String message, {
     Object? data,
   }) {
-    final error = <String, dynamic>{
+    final Map<String, dynamic> error = <String, dynamic>{
       'code': code,
       'message': message,
     };
+
     if (data != null) {
       error['data'] = data;
     }
+
     _send({
       'jsonrpc': '2.0',
       'id': id,

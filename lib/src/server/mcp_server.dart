@@ -56,7 +56,7 @@ class McpServer {
   ///
   /// Notifications (messages without an id) are acknowledged silently. Requests are dispatched by method name.
   Future<void> _handleMessage(JsonRpcMessage message) async {
-    final method = message.method;
+    final String? method = message.method;
 
     // Notifications have no id and expect no response.
     if (message.isNotification) {
@@ -109,7 +109,7 @@ class McpServer {
   /// Returns a JSON-RPC error if params are missing, the tool name is absent, or the tool is not registered. Exceptions
   /// thrown by the tool handler are caught and returned as MCP error content.
   Future<void> _handleToolsCall(JsonRpcMessage message) async {
-    final params = message.params;
+    final Map<String, dynamic>? params = message.params;
     if (params == null) {
       _transport.sendError(
         message.id,
@@ -119,7 +119,7 @@ class McpServer {
       return;
     }
 
-    final toolName = params['name'] as String?;
+    final String? toolName = params['name'] as String?;
     if (toolName == null) {
       _transport.sendError(
         message.id,
@@ -129,7 +129,7 @@ class McpServer {
       return;
     }
 
-    final tool = _tools[toolName];
+    final McpTool? tool = _tools[toolName];
     if (tool == null) {
       _transport.sendError(
         message.id,
@@ -139,10 +139,10 @@ class McpServer {
       return;
     }
 
-    final arguments = (params['arguments'] as Map<String, dynamic>?) ?? {};
+    final Map<String, dynamic> arguments = (params['arguments'] as Map<String, dynamic>?) ?? {};
 
     try {
-      final result = await tool.handler(arguments);
+      final Map<String, dynamic> result = await tool.handler(arguments);
       _transport.sendResult(message.id, {
         'content': [
           {
