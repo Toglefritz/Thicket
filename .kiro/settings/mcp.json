@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "thicket": {
+      "command": "dart",
+      "args": ["run", "bin/thicket.dart"],
+      "cwd": "/Users/scotthatfield/Documents/Projects/thicket",
+      "disabled": false
+    }
+  }
+}
