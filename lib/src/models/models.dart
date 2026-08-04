@@ -1,7 +1,8 @@
 library;
 
 /// Barrel export for all world model data types.
-export 'belief.dart';
-export 'episode.dart';
-export 'project_identity.dart';
-export 'world_model_entity.dart';
+export 'knowledge/belief.dart';
+export 'ontology/concept.dart';
+export 'experience/episode.dart';
+export 'project/project_identity.dart';
+export 'core/world_model_entity.dart';

@@ -1,6 +1,6 @@
 library;
 
-import 'world_model_entity.dart';
+import '../core/world_model_entity.dart';
 
 part 'belief_status.dart';
 
