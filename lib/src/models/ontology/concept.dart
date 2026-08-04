@@ -8,8 +8,8 @@ part 'concept_status.dart';
 /// A named abstraction used to organize project knowledge in the world model.
 ///
 /// Concepts are the nodes in the project ontology. They represent the important abstractions the agent uses to
-/// understand and reason about a software system, things like Component, Pattern, Constraint, or project-specific
-/// ideas like Screen, Repository, or Driver.
+/// understand and reason about a software system, things like Component, Pattern, Constraint, or project-specific ideas
+/// like Screen, Repository, or Driver.
 ///
 /// The ontology is flexible: the agent can introduce new concepts as it learns what matters for a particular project.
 /// However, changes are tracked and require rationale to discourage unnecessary churn.
