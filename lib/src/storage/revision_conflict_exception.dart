@@ -20,6 +20,5 @@ class RevisionConflictException implements Exception {
 
   @override
   String toString() =>
-      'RevisionConflictException: entity "$entityId" is at revision '
-      '$currentRevision but expected $expectedRevision';
+      'RevisionConflictException: entity "$entityId" is at revision $currentRevision but expected $expectedRevision';
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'json_rpc_message.dart';
 import 'json_rpc_transport.dart';
 import 'mcp_tool.dart';
 

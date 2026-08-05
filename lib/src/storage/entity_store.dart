@@ -46,6 +46,7 @@ class EntityStore {
     if (file.existsSync()) {
       final Map<String, dynamic> existing = _readJsonFile(file);
       final int existingRevision = existing['revision'] as int;
+      
       throw RevisionConflictException(
         entityId: entity.id,
         currentRevision: existingRevision,
@@ -72,8 +73,7 @@ class EntityStore {
 
     if (!file.existsSync()) {
       throw StateError(
-        'Cannot update entity "${entity.id}" in "$collection": '
-        'file does not exist',
+        'Cannot update entity "${entity.id}" in "$collection": file does not exist',
       );
     }
 
@@ -153,6 +153,7 @@ class EntityStore {
     }
 
     file.deleteSync();
+
     return true;
   }
 
@@ -169,6 +170,7 @@ class EntityStore {
   /// Reads and decodes a JSON file from disk.
   Map<String, dynamic> _readJsonFile(File file) {
     final String contents = file.readAsStringSync();
+
     return jsonDecode(contents) as Map<String, dynamic>;
   }
 
