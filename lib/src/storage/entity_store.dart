@@ -46,7 +46,7 @@ class EntityStore {
     if (file.existsSync()) {
       final Map<String, dynamic> existing = _readJsonFile(file);
       final int existingRevision = existing['revision'] as int;
-      
+
       throw RevisionConflictException(
         entityId: entity.id,
         currentRevision: existingRevision,
