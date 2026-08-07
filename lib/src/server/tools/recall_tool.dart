@@ -49,8 +49,7 @@ McpTool recallTool() {
         'relatedPaths': {
           'type': 'array',
           'items': {'type': 'string'},
-          'description':
-              'Filter to episodes related to any of these file paths.',
+          'description': 'Filter to episodes related to any of these file paths.',
         },
       },
       'required': ['projectPath'],
@@ -58,10 +57,8 @@ McpTool recallTool() {
     handler: (Map<String, dynamic> arguments) async {
       final String projectPath = arguments['projectPath'] as String;
       final String? kindFilter = arguments['kind'] as String?;
-      final List<String>? tagsFilter = (arguments['tags'] as List<dynamic>?)
-          ?.cast<String>();
-      final List<String>? pathsFilter =
-          (arguments['relatedPaths'] as List<dynamic>?)?.cast<String>();
+      final List<String>? tagsFilter = (arguments['tags'] as List<dynamic>?)?.cast<String>();
+      final List<String>? pathsFilter = (arguments['relatedPaths'] as List<dynamic>?)?.cast<String>();
 
       // Resolve the project's storage directory.
       final String storagePath = ProjectResolver.resolveStoragePath(
@@ -75,9 +72,7 @@ McpTool recallTool() {
       );
 
       // Deserialize into typed episodes for filtering.
-      List<Episode> episodes = allEpisodes
-          .map((Map<String, dynamic> json) => Episode.fromJson(json))
-          .toList();
+      List<Episode> episodes = allEpisodes.map((Map<String, dynamic> json) => Episode.fromJson(json)).toList();
 
       // Apply kind filter.
       if (kindFilter != null) {
@@ -89,8 +84,7 @@ McpTool recallTool() {
       if (tagsFilter != null && tagsFilter.isNotEmpty) {
         episodes = episodes
             .where(
-              (Episode ep) =>
-                  ep.tags.any((String tag) => tagsFilter.contains(tag)),
+              (Episode ep) => ep.tags.any((String tag) => tagsFilter.contains(tag)),
             )
             .toList();
       }
