@@ -22,9 +22,8 @@ class ProjectResolver {
 
     if (!identityFile.existsSync()) {
       throw StateError(
-        'Project has not been initialized with Thicket. '
-        'Run initialize_project first. '
-        'No .thicket/project.json found at: $projectPath',
+        'Project has not been initialized with Thicket. Run initialize_project first. No .thicket/project.json found '
+        'at: $projectPath',
       );
     }
 

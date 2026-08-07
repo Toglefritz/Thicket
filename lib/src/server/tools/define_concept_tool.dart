@@ -25,12 +25,10 @@ McpTool defineConceptTool() {
   return McpTool(
     name: 'define_concept',
     description:
-        'Introduces or refines a concept in the project ontology. '
-        'Use this when you identify a recurring abstraction that is '
-        'important for understanding the project: architectural layers, '
-        'component types, patterns, domain entities, or other concepts '
-        'that help organize knowledge about the system. '
-        'Requires a rationale explaining why this concept is needed.',
+        'Introduces or refines a concept in the project ontology. Use this when you identify a recurring abstraction '
+        'that is important for understanding the project: architectural layers, component types, patterns, domain '
+        'entities, or other concepts that help organize knowledge about the system. Requires a rationale explaining '
+        'why this concept is needed.',
     inputSchema: {
       'type': 'object',
       'properties': {
@@ -51,15 +49,15 @@ McpTool defineConceptTool() {
         'rationale': {
           'type': 'string',
           'description':
-              'Why this concept is being introduced. Explains what pattern or '
-              'abstraction the agent has identified that warrants a new concept.',
+              'Why this concept is being introduced. Explains what pattern or abstraction the agent has identified '
+              'that warrants a new concept.',
         },
         'supersededConceptIds': {
           'type': 'array',
           'items': {'type': 'string'},
           'description':
-              'Identifiers of older concepts that this concept replaces. '
-              'The superseded concepts will be marked as deprecated.',
+              'Identifiers of older concepts that this concept replaces. The superseded concepts will be marked as '
+              'deprecated.',
         },
       },
       'required': ['projectPath', 'name', 'description', 'rationale'],

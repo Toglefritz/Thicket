@@ -25,11 +25,9 @@ McpTool learnTool() {
   return McpTool(
     name: 'learn',
     description:
-        'Records a belief about the software system in the project world model. '
-        'Use this when you form a persistent understanding worth preserving: '
-        'which components own which responsibilities, which patterns are used, '
-        'which approaches to avoid, which areas are fragile, or which '
-        'dependencies exist between subsystems.',
+        'Records a belief about the software system in the project world model. Use this when you form a persistent '
+        'understanding worth preserving: which components own which responsibilities, which patterns are used, which '
+        'approaches to avoid, which areas are fragile, or which dependencies exist between subsystems.',
     inputSchema: {
       'type': 'object',
       'properties': {
@@ -56,22 +54,22 @@ McpTool learnTool() {
           'type': 'array',
           'items': {'type': 'string'},
           'description':
-              'Identifiers of episodes that provide evidence for this belief. '
-              'Maintains provenance by linking beliefs back to concrete experiences.',
+              'Identifiers of episodes that provide evidence for this belief. Maintains provenance by linking beliefs '
+              'back to concrete experiences.',
         },
         'supersededBeliefIds': {
           'type': 'array',
           'items': {'type': 'string'},
           'description':
-              'Identifiers of older beliefs that this belief replaces. '
-              'The superseded beliefs will be marked as such for traceability.',
+              'Identifiers of older beliefs that this belief replaces. The superseded beliefs will be marked as such '
+              'for traceability.',
         },
         'relatedPaths': {
           'type': 'array',
           'items': {'type': 'string'},
           'description':
-              'File paths or identifiers relevant to this belief. '
-              'Used as anchors for retrieval when working in the same area.',
+              'File paths or identifiers relevant to this belief. Used as anchors for retrieval when working in the '
+              'same area.',
         },
         'tags': {
           'type': 'array',
