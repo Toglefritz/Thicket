@@ -1,4 +1,5 @@
 import 'package:thicket/src/server/mcp_server.dart';
+import 'package:thicket/src/server/tools/define_concept_tool.dart';
 import 'package:thicket/src/server/tools/get_version_tool.dart';
 import 'package:thicket/src/server/tools/initialize_project_tool.dart';
 import 'package:thicket/src/server/tools/learn_tool.dart';
@@ -29,6 +30,7 @@ Future<void> main(List<String> arguments) async {
   server.registerTool(rememberTool());
   server.registerTool(recallTool());
   server.registerTool(learnTool());
+  server.registerTool(defineConceptTool());
 
   await server.serve();
 }
