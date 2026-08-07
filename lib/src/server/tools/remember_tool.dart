@@ -54,8 +54,7 @@ McpTool rememberTool() {
         },
         'content': {
           'type': 'string',
-          'description':
-              'The full description of the experience, including relevant context, reasoning, and outcome.',
+          'description': 'The full description of the experience, including relevant context, reasoning, and outcome.',
         },
         'relatedPaths': {
           'type': 'array',
