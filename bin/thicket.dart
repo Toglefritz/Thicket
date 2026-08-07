@@ -1,6 +1,7 @@
 import 'package:thicket/src/server/mcp_server.dart';
 import 'package:thicket/src/server/tools/get_version_tool.dart';
 import 'package:thicket/src/server/tools/initialize_project_tool.dart';
+import 'package:thicket/src/server/tools/remember_tool.dart';
 
 /// The current version of the Thicket server.
 ///
@@ -23,6 +24,7 @@ Future<void> main(List<String> arguments) async {
 
   server.registerTool(getVersionTool(version: version));
   server.registerTool(initializeProjectTool());
+  server.registerTool(rememberTool());
 
   await server.serve();
 }

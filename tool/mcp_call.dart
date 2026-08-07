@@ -9,9 +9,9 @@ import 'dart:io';
 ///
 /// Usage: dart run tool/mcp_call.dart `<tool_name>` [--key value ...]
 ///
-/// Examples: 
-/// - dart run tool/mcp_call.dart get_version 
-/// - dart run tool/mcp_call.dart initialize_project --projectPath /tmp/new-project 
+/// Examples:
+/// - dart run tool/mcp_call.dart get_version
+/// - dart run tool/mcp_call.dart initialize_project --projectPath /tmp/new-project
 /// - dart run tool/mcp_call.dart initialize_project --projectPath /tmp/new-project --projectName "New Project"
 void main(List<String> arguments) async {
   if (arguments.isEmpty) {

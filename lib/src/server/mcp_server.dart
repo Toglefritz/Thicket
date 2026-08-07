@@ -152,7 +152,7 @@ class McpServer {
           },
         ],
       });
-    } on Exception catch (e) {
+    } on Object catch (e) {
       _transport.sendResult(message.id, {
         'content': [
           {
