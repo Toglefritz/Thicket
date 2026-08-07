@@ -1,36 +1,14 @@
 # Thicket
 
-Thicket is an experimental persistent world model for LLM-based software engineering agents. The project explores whether an AI coding agent can accumulate a durable understanding of a software system through repeated experience, rather than reconstructing that understanding each time a new agent session begins.
+Thicket is a persistent world model for AI coding agents. It gives agents cross-session memory, allowing them to accumulate durable understanding of a software project rather than starting from scratch every time a new session begins.
 
-Modern coding agents are highly capable within a single session, but they often behave like engineers who are new to a project every time a new conversation begins. They repeatedly inspect the same files, rediscover architectural constraints, revisit previously rejected approaches, and reconstruct knowledge that an experienced engineer would already possess. They can also repeatedly make the same incorrect assumptions or violate the same project-specific patterns, even after those mistakes have been identified and corrected in earlier sessions. Without persistent knowledge of those corrections and the reasoning behind them, each new session risks relearning the same lessons from scratch.
+Modern coding agents are capable within a single session, but they behave like engineers who are new to a project every time a conversation starts. They repeatedly inspect the same files, rediscover architectural constraints, revisit previously rejected approaches, and reconstruct knowledge that an experienced engineer would already possess. Without persistent memory, each new session risks relearning lessons that earlier sessions already paid for.
 
-## Motivation
+Thicket solves this by providing a structured, persistent knowledge layer that any MCP-compatible agent can use to remember experiences, form beliefs about the system, and build a project-specific understanding that improves over time.
 
-Engineers who work on a codebase for months or years develop more than knowledge of its source code. They learn its architecture, conventions, history, failure modes, design tradeoffs, unusual constraints, and relationships between components. Much of this knowledge is not explicitly documented in any one place, but is instead gradually developed through experience working with the system.
+## How It Works
 
-Current LLM-based coding tools generally do not have an equivalent persistent understanding. Although they can inspect a repository, search documentation, and reason about the information available within their context window, much of the understanding developed while performing a task disappears when that context is discarded. Thicket investigates whether a persistent world model can preserve the useful parts of this experience and make them available to future agent sessions.
-
-The goal is not simply to create a larger memory store or archive previous conversations. Thicket is concerned with how useful knowledge can be extracted from experience, represented over time, retrieved when relevant, revised as new evidence is encountered, and eventually consolidated or forgotten. It also explores whether the structure of the world model itself can evolve as the agent learns which concepts, relationships, and abstractions are important to the project.
-
-The broader question is whether these mechanisms can allow an AI coding agent to develop something analogous to the project intuition accumulated by an experienced human engineer.
-
-## Goals
-
-Thicket is intended to explore several related questions:
-
-* Can persistent project knowledge reduce the amount of context an agent must repeatedly rediscover?
-* What information should an agent choose to remember after completing a task?
-* How should architectural knowledge, design decisions, previous failures, and historical context be represented?
-* Can an agent define and refine the concepts used by its own world model?
-* How should project-specific concepts and relationships emerge from repeated experience?
-* How should an agent revise its understanding when the codebase changes?
-* How can stale or incorrect knowledge be detected and replaced?
-* Can accumulated experience cause an agent to behave more like an engineer who has worked on a project for a long time?
-* Which world-model representations provide the greatest improvement in correctness, efficiency, and continuity between sessions?
-
-## Architecture
-
-Thicket is designed as an independent local service that can be integrated with existing AI-assisted development tools. The coding agent remains responsible for reasoning about a task, inspecting and modifying source code, and using its normal development tools, while Thicket provides persistent knowledge that survives beyond an individual agent session.
+Thicket runs as a local MCP (Model Context Protocol) server. The coding agent performs its normal work (reasoning, inspecting code, making changes) while Thicket provides persistent knowledge that survives across sessions.
 
 ```text
 ┌──────────────────────────────┐
@@ -39,189 +17,232 @@ Thicket is designed as an independent local service that can be integrated with 
 │  Kiro / Cursor / Codex / ... │
 └───────────────┬──────────────┘
                 │
-                │ MCP
+                │ MCP (stdio)
                 ▼
 ┌──────────────────────────────┐
 │            Thicket           │
 │                              │
-│  Retrieval                   │
-│  Experiences                 │
-│  Beliefs                     │
-│  Concepts                    │
-│  Relationships               │
-│  Evidence                    │
-│  Knowledge revision          │
-│  Model evolution             │
+│  recall    — retrieve prior  │
+│  remember  — record new      │
+│  learn     — form beliefs    │
+│  define    — shape ontology  │
 └───────────────┬──────────────┘
                 │
                 ▼
-        Persistent Storage
+┌──────────────────────────────┐
+│     Persistent Storage       │
+│  ~/.thicket/projects/<id>/   │
+└──────────────────────────────┘
 ```
 
-The initial integration uses the Model Context Protocol (MCP), allowing compatible coding agents to query and update the world model through a small tool interface. Keeping Thicket independent from the coding agent also allows the same world model to be used with different models and development tools without tying its representation to a particular LLM provider or agent implementation.
+Any MCP-compatible agent can integrate with Thicket. The world model is stored independently from the agent itself, so the same accumulated knowledge is available regardless of which LLM or development tool is used.
 
-## World Model
+## The Problem
 
-Thicket distinguishes between an agent's experiences working with a project and its current understanding of that project. It also separates the knowledge stored in the model from the conceptual structure used to represent that knowledge.
+AI coding agents today have no persistent project understanding. Every session starts cold. This leads to:
 
-This creates three related layers:
+- Repeated rediscovery of the same architectural constraints
+- Repeated violations of project-specific patterns and conventions
+- Failure to learn from previously rejected approaches
+- No memory of debugging outcomes or root-cause investigations
+- Inability to build the kind of project intuition that experienced engineers develop over months
+
+Thicket addresses each of these by giving agents a structured way to remember, retrieve, and revise project knowledge across sessions.
+
+## World Model Structure
+
+Thicket organizes knowledge into three layers:
 
 ```text
-Experience
-    │
-    ▼
-Project Knowledge
-    │
-    ▼
-Project Ontology
+Experience Layer (Episodes)
+         │
+         ▼
+Knowledge Layer (Beliefs)
+         │
+         ▼
+Ontology Layer (Concepts)
 ```
 
-Experiences capture what the agent encountered while working. Project knowledge captures what the agent currently believes to be true. The project ontology defines the concepts and relationships the agent uses to organize that knowledge.
+**Episodes** record significant experiences: tasks performed, constraints discovered, approaches that failed, debugging outcomes, unexpected interactions between subsystems. They provide historical evidence from which more general knowledge can be derived.
 
-### Episodes
+**Beliefs** represent the agent's current understanding of the system: which components own which responsibilities, which patterns are used, which dependencies exist, which approaches to avoid. Beliefs carry confidence scores and provenance links to the episodes that support them.
 
-Episodes record significant experiences encountered while performing development work. An episode might describe a task that was performed, an architectural constraint that was discovered, an approach that failed, the reason an implementation was rejected, an unexpected interaction between subsystems, or the outcome of a debugging investigation.
+**Concepts** define the vocabulary the agent uses to organize its knowledge. The ontology adapts to each project: a Flutter app might develop concepts like Screen, StateManager, and NavigationFlow, while an embedded firmware project might develop HardwarePeripheral, Driver, and TimingConstraint.
 
-These episodes provide historical evidence from which more general knowledge can be derived. They are not intended to capture every action performed by the agent or become transcripts of entire coding sessions; instead, they preserve experiences that may influence how future work should be approached.
-
-### Beliefs
-
-Beliefs represent the agent's current understanding of the software system. They may describe which component owns a particular responsibility, which architectural patterns are normally used, which subsystems have important dependencies, which implementation approaches should be avoided, or which areas of the codebase are particularly fragile.
-
-A belief can be associated with supporting evidence, confidence, timestamps, and relationships to other beliefs or experiences. Because the software system itself continues to evolve, beliefs are not assumed to be permanently correct. New evidence may strengthen a belief, reduce confidence in it, or cause it to be revised or superseded entirely.
-
-This distinction allows Thicket to represent both what the agent experienced and what the agent currently believes about the system.
-
-## Adaptive Project Ontology
-
-Thicket does not assume that every software project should be described using the same fixed world-model schema. Different systems have different important abstractions, and part of the experiment is determining whether an agent can learn which concepts are useful for understanding the project in which it is working.
-
-A Flutter application, for example, might lead an agent to develop concepts such as:
-
-```text
-Feature
-Screen
-StateManager
-Repository
-BackendService
-NavigationFlow
-DeviceCapability
-```
-
-An embedded firmware project might instead develop concepts such as:
-
-```text
-HardwarePeripheral
-Driver
-Protocol
-InterruptHandler
-Register
-TimingConstraint
-```
-
-The agent can also define relationships between these concepts, such as:
-
-```text
-Screen uses StateManager
-StateManager depends_on Repository
-Feature implemented_by Screen
-Driver controls HardwarePeripheral
-```
-
-These project-specific concepts are part of the world model rather than part of Thicket's fixed implementation.
-
-Over time, the agent may introduce new concepts, refine existing ones, merge overlapping concepts, or split concepts that have proven too broad. In this way, the project ontology itself can evolve as the agent gains experience and develops a more useful conceptualization of the system.
-
-A small set of underlying primitives remains stable so that Thicket can track provenance, revisions, relationships, and evidence. Above this substrate, however, the agent is free to shape the model around the project it is learning.
-
-## Agent Interaction
-
-A typical interaction begins when an agent receives a new development task. Before beginning substantial work, the agent queries Thicket for knowledge relevant to the task and incorporates that information into its working context.
+## Agent Interaction Flow
 
 ```text
 New development task
         │
         ▼
-Recall relevant world-model knowledge
+recall — retrieve relevant knowledge
         │
         ▼
-Agent performs normal development work
+Agent performs development work
         │
         ▼
-Agent discovers significant new information
+Agent encounters significant information
         │
         ▼
-Record experience
-        │
-        ├── update beliefs
-        └── refine project ontology
+remember — record the experience
         │
         ▼
-World model persists for future sessions
+learn — update beliefs about the system
+        │
+        ▼
+Knowledge persists for future sessions
 ```
 
-As the agent works, it may encounter information that confirms existing knowledge, reveals something new, or contradicts what the world model previously believed. It may also encounter repeated patterns that suggest the world model itself should be reorganized around a new concept or relationship.
+The world model is treated as prior knowledge, not absolute truth. The current state of the codebase remains authoritative. When new evidence contradicts an existing belief, the agent revises its understanding rather than clinging to outdated information.
 
-The world model is therefore treated as prior knowledge rather than as an unquestionable source of truth. The current software system remains authoritative, and an important part of the experiment is understanding how an agent should respond when its accumulated knowledge or conceptual structure no longer agrees with the system it is observing.
+## MCP Tools
 
-## MCP Interface
+Thicket exposes the following tools through the Model Context Protocol:
 
-The initial world-model interface is intended to remain small while still allowing the agent to modify both the contents and the shape of the model.
+| Tool | Purpose |
+|------|---------|
+| `initialize_project` | Sets up Thicket for a new project (creates identity and storage) |
+| `remember` | Records a significant experience as an episode |
+| `recall` | Retrieves relevant episodes from the world model |
+| `get_version` | Returns the current Thicket server version |
 
-Conceptually, the interface may include operations such as:
+## Adaptive Ontology
+
+Thicket does not impose a fixed schema on every project. The ontology is organized into three tiers with increasing flexibility:
+
+- **Built-in primitives**: The structural types Thicket itself needs (Episode, Belief, Concept). Fixed and not agent-modifiable.
+- **Recommended concepts**: A starter set of concepts that work for most software projects (Component, Pattern, Constraint, Convention). Modifiable with rationale.
+- **Project-defined concepts**: Abstractions the agent creates as it learns what matters for a specific project. Tracked with required rationale to prevent unnecessary churn.
+
+Each concept carries origin metadata, lifecycle status (proposed, active, deprecated, retired), and a rationale field. This biases the system toward stability while allowing evolution when the agent has a compelling reason.
+
+## Storage
+
+World model data is stored as human-readable JSON files on the local filesystem:
 
 ```text
-recall(task)
+~/.thicket/projects/<project-id>/
+  episodes/
+    <episode-id>.json
+  beliefs/
+    <belief-id>.json
+  concepts/
+    <concept-id>.json
 ```
 
-Retrieves existing knowledge relevant to the current development task.
+Each project is linked to its storage through a `.thicket/project.json` identity file in the project root. The identity contains a stable, human-readable identifier (e.g. "mossy-lantern-a3f2") that persists even if the project is moved or renamed.
+
+Storage is designed to be inspectable. Every piece of knowledge the agent has accumulated can be read, audited, and understood by a human developer.
+
+## Setup
+
+### Prerequisites
+
+- Dart SDK 3.12.2 or later
+
+### Installation
+
+```bash
+git clone https://github.com/Toglefritz/thicket.git
+cd thicket
+dart pub get
+```
+
+### Running the Server
+
+```bash
+dart run bin/thicket.dart
+```
+
+The server communicates over stdio using the MCP protocol (newline-delimited JSON-RPC 2.0).
+
+### MCP Configuration
+
+Add Thicket to your IDE's MCP configuration. For Kiro, create or update `.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "thicket": {
+      "command": "dart",
+      "args": ["run", "bin/thicket.dart"],
+      "cwd": "/path/to/thicket"
+    }
+  }
+}
+```
+
+### Initialize a Project
+
+Before using Thicket with a project, initialize it:
+
+```bash
+dart run tool/mcp_call.dart initialize_project --projectPath /path/to/your/project
+```
+
+This creates `.thicket/project.json` in the project and sets up the centralized storage directory.
+
+### Testing Tools Manually
+
+A CLI client is included for testing MCP tool calls outside of an agent:
+
+```bash
+dart run tool/mcp_call.dart get_version
+dart run tool/mcp_call.dart recall --projectPath /path/to/project
+dart run tool/mcp_call.dart remember --projectPath /path/to/project \
+  --kind constraintDiscovered \
+  --summary "Database migrations must run before server start" \
+  --content "The server crashes if pending migrations exist..."
+```
+
+## Architecture
+
+Thicket is implemented as a Dart MCP server with the following structure:
 
 ```text
-remember(episode)
+lib/src/
+  models/
+    core/         — base entity type (id, timestamps, revision)
+    experience/   — Episode and EpisodeKind
+    knowledge/    — Belief and BeliefStatus
+    ontology/     — Concept, ConceptOrigin, ConceptStatus
+    project/      — ProjectIdentity
+  server/
+    mcp_server.dart       — JSON-RPC dispatch and protocol handling
+    json_rpc_transport.dart — stdio transport layer
+    json_rpc_message.dart  — message parsing
+    mcp_tool.dart          — tool registration interface
+    tools/
+      initialize_project_tool.dart
+      remember_tool.dart
+      recall_tool.dart
+      get_version_tool.dart
+      project_resolver.dart
+  storage/
+    entity_store.dart              — filesystem persistence
+    revision_conflict_exception.dart — concurrency control
+  utils/
+    id_generator.dart — human-readable ID generation
 ```
 
-Records a significant experience encountered while performing development work.
+Key architectural decisions:
 
-```text
-learn(belief)
-```
+- **Protocol-native**: Built directly on JSON-RPC 2.0 without an SDK dependency, giving full control over the MCP implementation.
+- **Agent-agnostic**: Any MCP-compatible client can use Thicket. The world model is not tied to a specific LLM or IDE.
+- **Inspectable storage**: JSON files on disk, not an opaque database. Developers can read, audit, and understand everything the agent knows.
+- **Optimistic concurrency**: Revision-based conflict detection prevents silent data loss when multiple sessions interact with the same world model.
+- **Adaptive ontology with friction**: The agent can evolve the conceptual structure of its knowledge, but stability is favored over churn through required rationale and tiered origin controls.
 
-Adds or revises persistent knowledge about the project based on newly acquired evidence.
+## Project Identity
 
-```text
-define_concept(...)
-```
+Each project is identified by a human-readable slug (e.g. "quiet-compass-71dc") generated at initialization time. This identifier:
 
-Introduces or refines a concept used to organize project knowledge.
+- Remains stable even if the project directory is moved or renamed
+- Serves as the directory name under `~/.thicket/projects/`
+- Is stored in `.thicket/project.json` alongside a human-readable project name
 
-```text
-define_relationship(...)
-```
+This design decouples the world model from filesystem paths, allowing projects to be relocated without losing their accumulated knowledge.
 
-Defines a meaningful relationship between concepts in the project ontology.
+## License
 
-```text
-revise_model(...)
-```
-
-Updates, merges, splits, or supersedes parts of the existing world model when the agent's understanding changes.
-
-The exact interface is expected to evolve as the project explores how much freedom an agent should have to modify its own representation of a software system.
-
-## Storage and Retrieval
-
-Thicket favors flexible, inspectable storage that can accommodate evolving world-model structures without requiring a rigid relational schema. A document database is a natural fit because episodes, beliefs, concepts, relationships, evidence, and future world-model structures may not all share the same shape.
-
-Documents can preserve both structured fields and flexible project-specific data, allowing the representation to evolve as the agent introduces new concepts or changes how existing knowledge is modeled. The persistence layer should support links between documents, revision history, provenance, and metadata such as confidence and timestamps without requiring the logical world model to mirror the physical storage schema.
-
-Semantic search and embeddings can later be added to improve retrieval without making the embedding space itself the world model. Separating the representation of knowledge from the mechanisms used to retrieve it makes it possible to experiment with different approaches independently and to inspect why a particular piece of knowledge exists.
-
-## Research Direction
-
-Thicket is ultimately an experiment in longitudinal AI behavior. Instead of evaluating an agent only on isolated coding tasks, the project considers what happens when an agent performs a sequence of tasks against the same evolving software system and is able to retain selected knowledge between otherwise independent sessions.
-
-A useful persistent agent should gradually require less rediscovery, retain important architectural knowledge, recognize relationships with previous work, learn from failed approaches, and adapt when previously correct knowledge becomes obsolete. More ambitiously, it should also develop increasingly useful abstractions for understanding the system rather than merely accumulating an increasingly large collection of historical facts.
-
-This makes the evolution of the world model itself part of the research subject. An agent may begin with only general-purpose primitives and gradually develop a project-specific ontology shaped by the patterns, responsibilities, constraints, and abstractions it repeatedly encounters.
-
-The long-term objective is to investigate whether persistent and adaptable world models can provide AI agents with something analogous to the accumulated project intuition developed by experienced human engineers, and to understand how those models should grow and change as the agents themselves gain experience.
+MIT
