@@ -20,7 +20,7 @@ McpTool recallTool() {
     description:
         'Retrieves episodes from the project world model. Use this at the start of a task to recall relevant prior '
         'experiences: constraints discovered, approaches that failed, debugging outcomes, and other knowledge '
-        'accumulated in previous sessions. Supports optional filtering by kind, tags, or related file paths.',
+        'accumulated in previous sessions. Supports optional filtering by kind.',
     inputSchema: {
       'type': 'object',
       'properties': {
@@ -41,24 +41,12 @@ McpTool recallTool() {
             'observation',
           ],
         },
-        'tags': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description': 'Filter to episodes containing any of these tags.',
-        },
-        'relatedPaths': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description': 'Filter to episodes related to any of these file paths.',
-        },
       },
       'required': ['projectPath'],
     },
     handler: (Map<String, dynamic> arguments) async {
       final String projectPath = arguments['projectPath'] as String;
       final String? kindFilter = arguments['kind'] as String?;
-      final List<String>? tagsFilter = (arguments['tags'] as List<dynamic>?)?.cast<String>();
-      final List<String>? pathsFilter = (arguments['relatedPaths'] as List<dynamic>?)?.cast<String>();
 
       // Resolve the project's storage directory.
       final String storagePath = ProjectResolver.resolveStoragePath(
@@ -78,26 +66,6 @@ McpTool recallTool() {
       if (kindFilter != null) {
         final EpisodeKind kind = EpisodeKind.values.byName(kindFilter);
         episodes = episodes.where((Episode ep) => ep.kind == kind).toList();
-      }
-
-      // Apply tags filter (match any).
-      if (tagsFilter != null && tagsFilter.isNotEmpty) {
-        episodes = episodes
-            .where(
-              (Episode ep) => ep.tags.any((String tag) => tagsFilter.contains(tag)),
-            )
-            .toList();
-      }
-
-      // Apply related paths filter (match any).
-      if (pathsFilter != null && pathsFilter.isNotEmpty) {
-        episodes = episodes
-            .where(
-              (Episode ep) => ep.relatedPaths.any(
-                (String path) => pathsFilter.contains(path),
-              ),
-            )
-            .toList();
       }
 
       // Sort by creation time, most recent first.

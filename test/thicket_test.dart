@@ -28,7 +28,7 @@ void main() {
   group('WorldModelEntity', () {
     test('round-trips through JSON', () {
       final now = DateTime.utc(2025, 1, 1);
-      final entity = WorldModelEntity(id: 'test-id', createdAt: now, updatedAt: now, revision: 1);
+      final entity = WorldModelEntity(id: 'test-id', createdAt: now, updatedAt: now);
 
       final json = entity.toJson();
       final restored = WorldModelEntity.fromJson(json);
@@ -36,7 +36,6 @@ void main() {
       expect(restored.id, equals('test-id'));
       expect(restored.createdAt, equals(now));
       expect(restored.updatedAt, equals(now));
-      expect(restored.revision, equals(1));
     });
   });
 

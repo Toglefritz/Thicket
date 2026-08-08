@@ -19,17 +19,10 @@ class WorldModelEntity {
   /// Updated on every revision. Equal to [createdAt] for newly created entities.
   final DateTime updatedAt;
 
-  /// The revision number of this entity.
-  ///
-  /// Starts at 1 on creation and increments with each update. Used for optimistic concurrency control and to track how
-  /// many times an entity has been revised.
-  final int revision;
-
   const WorldModelEntity({
     required this.id,
     required this.createdAt,
     required this.updatedAt,
-    required this.revision,
   });
 
   /// Creates a JSON-serializable map of the base entity fields.
@@ -39,7 +32,6 @@ class WorldModelEntity {
     'id': id,
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
-    'revision': revision,
   };
 
   /// Reconstructs the base entity fields from a JSON map.
@@ -50,7 +42,6 @@ class WorldModelEntity {
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      revision: json['revision'] as int,
     );
   }
 }

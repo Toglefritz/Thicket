@@ -4,20 +4,15 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../models/core/world_model_entity.dart';
-import 'revision_conflict_exception.dart';
 
 /// Persists and retrieves world model entities as JSON files on the local filesystem.
 ///
 /// Each entity type is stored in its own subdirectory under the project's storage root (e.g.
 /// `~/.thicket/projects/<id>/episodes/`). Each entity occupies a single JSON file named by its ID.
-///
-/// This store enforces optimistic concurrency through revision checking: when updating an existing entity, the revision
-/// on disk must match the expected previous revision. This prevents silent overwrites when two processes modify the
-/// same entity.
 class EntityStore {
   /// The root directory for this project's world model storage.
   ///
-  /// Typically `~/.thicket/projects/<project-id>/`.
+  /// Typically `~/.thicket/projects/<id>/`.
   final Directory _storageRoot;
 
   /// JSON encoder configured for human-readable output.
@@ -33,7 +28,7 @@ class EntityStore {
   /// Saves a new entity to disk.
   ///
   /// The entity is written to `<storageRoot>/<collection>/<id>.json`. If a file already exists at that path, a
-  /// [RevisionConflictException] is thrown to prevent accidental overwrites. Use [update] for modifying existing
+  /// [StateError] is thrown to prevent accidental overwrites. Use [update] for modifying existing
   /// entities.
   ///
   /// The [collection] parameter determines the subdirectory (e.g. "episodes", "beliefs", "concepts").
@@ -44,14 +39,7 @@ class EntityStore {
     final File file = _fileFor(collection, entity.id);
 
     if (file.existsSync()) {
-      final Map<String, dynamic> existing = _readJsonFile(file);
-      final int existingRevision = existing['revision'] as int;
-
-      throw RevisionConflictException(
-        entityId: entity.id,
-        currentRevision: existingRevision,
-        expectedRevision: 0,
-      );
+      throw StateError('Entity "${entity.id}" already exists in "$collection".');
     }
 
     _writeJsonFile(file, entity.toJson());
@@ -59,32 +47,18 @@ class EntityStore {
 
   /// Updates an existing entity on disk.
   ///
-  /// Before writing, the current file is read and its revision number is compared against [expectedRevision]. If they
-  /// do not match, a [RevisionConflictException] is thrown.
+  /// Before writing, the method checks that the file exists, throwing a [StateError] if it is missing.
   ///
-  /// The caller is responsible for incrementing the entity's revision and updating its `updatedAt` timestamp before
-  /// calling this method.
+  /// The caller is responsible for updating its `updatedAt` timestamp before calling this method.
   Future<void> update({
     required String collection,
     required WorldModelEntity entity,
-    required int expectedRevision,
   }) async {
     final File file = _fileFor(collection, entity.id);
 
     if (!file.existsSync()) {
       throw StateError(
         'Cannot update entity "${entity.id}" in "$collection": file does not exist',
-      );
-    }
-
-    final Map<String, dynamic> existing = _readJsonFile(file);
-    final int currentRevision = existing['revision'] as int;
-
-    if (currentRevision != expectedRevision) {
-      throw RevisionConflictException(
-        entityId: entity.id,
-        currentRevision: currentRevision,
-        expectedRevision: expectedRevision,
       );
     }
 

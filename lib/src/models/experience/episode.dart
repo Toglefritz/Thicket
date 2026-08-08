@@ -25,25 +25,13 @@ class Episode extends WorldModelEntity {
   /// The full description of the experience, including relevant context, reasoning, and outcome.
   final String content;
 
-  /// File paths or identifiers relevant to this episode.
-  ///
-  /// These provide anchors for retrieval — when the agent is working in the same area of the codebase, related episodes
-  /// can be surfaced.
-  final List<String> relatedPaths;
-
-  /// Free-form tags for additional categorization and retrieval.
-  final List<String> tags;
-
   const Episode({
     required super.id,
     required super.createdAt,
     required super.updatedAt,
-    required super.revision,
     required this.kind,
     required this.summary,
     required this.content,
-    this.relatedPaths = const [],
-    this.tags = const [],
   });
 
   @override
@@ -52,8 +40,6 @@ class Episode extends WorldModelEntity {
     'kind': kind.name,
     'summary': summary,
     'content': content,
-    'relatedPaths': relatedPaths,
-    'tags': tags,
   };
 
   /// Reconstructs an [Episode] from a JSON map.
@@ -62,12 +48,9 @@ class Episode extends WorldModelEntity {
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      revision: json['revision'] as int,
       kind: EpisodeKind.values.byName(json['kind'] as String),
       summary: json['summary'] as String,
       content: json['content'] as String,
-      relatedPaths: (json['relatedPaths'] as List<dynamic>?)?.cast<String>() ?? const [],
-      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
     );
   }
 }

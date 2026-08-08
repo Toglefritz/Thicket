@@ -50,32 +50,6 @@ McpTool learnTool() {
           'minimum': 0.0,
           'maximum': 1.0,
         },
-        'supportingEpisodeIds': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description':
-              'Identifiers of episodes that provide evidence for this belief. Maintains provenance by linking beliefs '
-              'back to concrete experiences.',
-        },
-        'supersededBeliefIds': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description':
-              'Identifiers of older beliefs that this belief replaces. The superseded beliefs will be marked as such '
-              'for traceability.',
-        },
-        'relatedPaths': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description':
-              'File paths or identifiers relevant to this belief. Used as anchors for retrieval when working in the '
-              'same area.',
-        },
-        'tags': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description': 'Free-form tags for additional categorization and retrieval.',
-        },
       },
       'required': ['projectPath', 'claim', 'rationale', 'confidence'],
     },
@@ -86,12 +60,6 @@ McpTool learnTool() {
       final double confidence = (arguments['confidence'] is String)
           ? double.parse(arguments['confidence'] as String)
           : (arguments['confidence'] as num).toDouble();
-      final List<String> supportingEpisodeIds =
-          (arguments['supportingEpisodeIds'] as List<dynamic>?)?.cast<String>() ?? [];
-      final List<String> supersededBeliefIds =
-          (arguments['supersededBeliefIds'] as List<dynamic>?)?.cast<String>() ?? [];
-      final List<String> relatedPaths = (arguments['relatedPaths'] as List<dynamic>?)?.cast<String>() ?? [];
-      final List<String> tags = (arguments['tags'] as List<dynamic>?)?.cast<String>() ?? [];
 
       // Resolve the project's storage directory.
       final String storagePath = ProjectResolver.resolveStoragePath(
@@ -109,46 +77,11 @@ McpTool learnTool() {
         id: beliefId,
         createdAt: now,
         updatedAt: now,
-        revision: 1,
         claim: claim,
         rationale: rationale,
         confidence: confidence,
         status: BeliefStatus.active,
-        supportingEpisodeIds: supportingEpisodeIds,
-        supersededBeliefIds: supersededBeliefIds,
-        relatedPaths: relatedPaths,
-        tags: tags,
       );
-
-      // If this belief supersedes others, mark them as superseded.
-      for (final String oldBeliefId in supersededBeliefIds) {
-        final Map<String, dynamic>? existing = await store.load(
-          collection: 'beliefs',
-          id: oldBeliefId,
-        );
-        if (existing != null) {
-          final Belief oldBelief = Belief.fromJson(existing);
-          final Belief updatedOld = Belief(
-            id: oldBelief.id,
-            createdAt: oldBelief.createdAt,
-            updatedAt: now,
-            revision: oldBelief.revision + 1,
-            claim: oldBelief.claim,
-            rationale: oldBelief.rationale,
-            confidence: oldBelief.confidence,
-            status: BeliefStatus.superseded,
-            supportingEpisodeIds: oldBelief.supportingEpisodeIds,
-            supersededBeliefIds: oldBelief.supersededBeliefIds,
-            relatedPaths: oldBelief.relatedPaths,
-            tags: oldBelief.tags,
-          );
-          await store.update(
-            collection: 'beliefs',
-            entity: updatedOld,
-            expectedRevision: oldBelief.revision,
-          );
-        }
-      }
 
       // Persist the new belief.
       await store.save(collection: 'beliefs', entity: belief);

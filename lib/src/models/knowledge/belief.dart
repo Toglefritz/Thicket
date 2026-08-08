@@ -29,38 +29,14 @@ class Belief extends WorldModelEntity {
   /// The current lifecycle status of this belief.
   final BeliefStatus status;
 
-  /// Identifiers of episodes that provide evidence for this belief.
-  ///
-  /// Links the belief back to the concrete experiences from which it was derived, maintaining provenance.
-  final List<String> supportingEpisodeIds;
-
-  /// Identifiers of other beliefs that this belief supersedes.
-  ///
-  /// When the agent revises its understanding, the old belief is marked as [BeliefStatus.superseded] and the new belief
-  /// references it here for traceability.
-  final List<String> supersededBeliefIds;
-
-  /// File paths or identifiers relevant to this belief.
-  ///
-  /// Anchors the belief to specific areas of the codebase for retrieval when the agent is working in those areas.
-  final List<String> relatedPaths;
-
-  /// Free-form tags for additional categorization and retrieval.
-  final List<String> tags;
-
   const Belief({
     required super.id,
     required super.createdAt,
     required super.updatedAt,
-    required super.revision,
     required this.claim,
     required this.rationale,
     required this.confidence,
     required this.status,
-    this.supportingEpisodeIds = const [],
-    this.supersededBeliefIds = const [],
-    this.relatedPaths = const [],
-    this.tags = const [],
   });
 
   @override
@@ -70,10 +46,6 @@ class Belief extends WorldModelEntity {
     'rationale': rationale,
     'confidence': confidence,
     'status': status.name,
-    'supportingEpisodeIds': supportingEpisodeIds,
-    'supersededBeliefIds': supersededBeliefIds,
-    'relatedPaths': relatedPaths,
-    'tags': tags,
   };
 
   /// Reconstructs a [Belief] from a JSON map.
@@ -82,15 +54,10 @@ class Belief extends WorldModelEntity {
       id: json['id'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
-      revision: json['revision'] as int,
       claim: json['claim'] as String,
       rationale: json['rationale'] as String,
       confidence: (json['confidence'] as num).toDouble(),
       status: BeliefStatus.values.byName(json['status'] as String),
-      supportingEpisodeIds: (json['supportingEpisodeIds'] as List<dynamic>?)?.cast<String>() ?? const [],
-      supersededBeliefIds: (json['supersededBeliefIds'] as List<dynamic>?)?.cast<String>() ?? const [],
-      relatedPaths: (json['relatedPaths'] as List<dynamic>?)?.cast<String>() ?? const [],
-      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? const [],
     );
   }
 }

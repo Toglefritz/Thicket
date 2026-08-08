@@ -56,18 +56,6 @@ McpTool rememberTool() {
           'type': 'string',
           'description': 'The full description of the experience, including relevant context, reasoning, and outcome.',
         },
-        'relatedPaths': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description':
-              'File paths or identifiers relevant to this experience. Used as anchors for retrieval when working in '
-              'the same area.',
-        },
-        'tags': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description': 'Free-form tags for additional categorization and retrieval.',
-        },
       },
       'required': ['projectPath', 'kind', 'summary', 'content'],
     },
@@ -76,8 +64,6 @@ McpTool rememberTool() {
       final String kindStr = arguments['kind'] as String;
       final String summary = arguments['summary'] as String;
       final String content = arguments['content'] as String;
-      final List<String> relatedPaths = (arguments['relatedPaths'] as List<dynamic>?)?.cast<String>() ?? [];
-      final List<String> tags = (arguments['tags'] as List<dynamic>?)?.cast<String>() ?? [];
 
       // Resolve the project's storage directory.
       final String storagePath = ProjectResolver.resolveStoragePath(projectPath);
@@ -95,12 +81,9 @@ McpTool rememberTool() {
         id: episodeId,
         createdAt: now,
         updatedAt: now,
-        revision: 1,
         kind: kind,
         summary: summary,
         content: content,
-        relatedPaths: relatedPaths,
-        tags: tags,
       );
 
       // Persist to the store.
