@@ -21,10 +21,16 @@ class ProjectIdentity {
   /// When this project identity was first created.
   final DateTime createdAt;
 
+  /// The storage topology used for this project's world model.
+  ///
+  /// Can be 'centralized' (default) or 'inRepo'.
+  final String storageMode;
+
   const ProjectIdentity({
     required this.projectId,
     required this.projectName,
     required this.createdAt,
+    this.storageMode = 'centralized',
   });
 
   /// Serializes this identity to JSON for writing to `.thicket/project.json`.
@@ -32,6 +38,7 @@ class ProjectIdentity {
     'projectId': projectId,
     'projectName': projectName,
     'createdAt': createdAt.toUtc().toIso8601String(),
+    'storageMode': storageMode,
   };
 
   /// Deserializes a project identity from the contents of a `.thicket/project.json` file.
@@ -40,6 +47,7 @@ class ProjectIdentity {
       projectId: json['projectId'] as String,
       projectName: json['projectName'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      storageMode: json['storageMode'] as String? ?? 'centralized',
     );
   }
 }

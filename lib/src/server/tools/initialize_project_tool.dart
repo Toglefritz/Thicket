@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import '../../models/project/project_identity.dart';
 import '../../utils/id_generator.dart';
 import '../mcp_tool.dart';
+import 'project_resolver.dart';
 
 /// Creates the `initialize_project` tool which sets up Thicket for a new project.
 ///
@@ -13,7 +14,7 @@ import '../mcp_tool.dart';
 /// 1. Generates a human-readable unique identifier for the project
 /// 2. Creates `.thicket/project.json` in the project's root directory
 /// 3. Creates the centralized storage directory at
-/// `~/.thicket/projects/<id>/`
+/// `~/.thicket/projects/<id>/` or the local directory at `.thicket/world_model/`
 ///
 /// The tool requires a `projectPath` argument pointing to the root of the project to initialize. It also accepts an
 /// optional `projectName` for the human-readable label stored in the identity file.
@@ -36,6 +37,11 @@ McpTool initializeProjectTool() {
         'projectName': {
           'type': 'string',
           'description': 'A human-readable name for the project. Defaults to the directory name if not provided.',
+        },
+        'storageMode': {
+          'type': 'string',
+          'description': 'The storage topology for the world model: "centralized" or "inRepo". Defaults to "centralized".',
+          'enum': ['centralized', 'inRepo'],
         },
       },
       'required': ['projectPath'],
@@ -69,11 +75,17 @@ McpTool initializeProjectTool() {
       final IdGenerator generator = IdGenerator();
       final String projectId = generator.generate();
       final String projectName = (arguments['projectName'] as String?) ?? p.basename(projectPath);
+      final String storageMode = (arguments['storageMode'] as String?) ?? 'centralized';
+
+      if (storageMode != 'centralized' && storageMode != 'inRepo') {
+        throw ArgumentError('Invalid storageMode: $storageMode');
+      }
 
       final ProjectIdentity identity = ProjectIdentity(
         projectId: projectId,
         projectName: projectName,
         createdAt: DateTime.now().toUtc(),
+        storageMode: storageMode,
       );
 
       // Create .thicket/project.json in the project directory.
@@ -82,11 +94,19 @@ McpTool initializeProjectTool() {
         const JsonEncoder.withIndent('  ').convert(identity.toJson()),
       );
 
-      // Create the centralized storage directory.
-      final String home = Platform.environment['HOME'] ?? '';
-      final Directory storageDir = Directory(
-        p.join(home, '.thicket', 'projects', projectId),
-      );
+      // Create the storage directory.
+      final String storagePath;
+      if (storageMode == 'inRepo') {
+        storagePath = p.join(projectPath, '.thicket', 'world_model');
+      } else {
+        final String home = ProjectResolver.getHomeDirectory();
+        if (home.isEmpty) {
+          throw StateError('Home directory environment variable is not set');
+        }
+        storagePath = p.join(home, '.thicket', 'projects', projectId);
+      }
+
+      final Directory storageDir = Directory(storagePath);
       storageDir.createSync(recursive: true);
 
       return {
