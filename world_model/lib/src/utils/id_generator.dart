@@ -12,19 +12,19 @@ part 'adjectives.dart';
 ///
 /// Examples: 'mossy-lantern-a3f2', 'quiet-compass-71dc', 'amber-summit-e09b'
 class IdGenerator {
-  /// Random number generator used for selecting words and generating the hex suffix.
-  final Random _random;
-
   /// Creates an ID generator with an optional seed for deterministic output in tests.
   IdGenerator({Random? random}) : _random = random ?? Random.secure();
+
+  /// Random number generator used for selecting words and generating the hex suffix.
+  final Random _random;
 
   /// Generates a new project identifier.
   ///
   /// The result is a lowercase, hyphen-separated string safe for use as a directory name on all major filesystems.
   String generate() {
-    final String adjective = _adjectives.elementAt(_random.nextInt(_adjectives.length));
-    final String noun = _nouns.elementAt(_random.nextInt(_nouns.length));
-    final String suffix = _randomHex(4);
+    final adjective = _adjectives.elementAt(_random.nextInt(_adjectives.length));
+    final noun = _nouns.elementAt(_random.nextInt(_nouns.length));
+    final suffix = _randomHex(4);
 
     return '$adjective-$noun-$suffix';
   }
@@ -42,8 +42,8 @@ class IdGenerator {
   /// so this suffix only needs to be long enough to avoid collisions among projects that happen to draw the same
   /// adjective-noun pair.
   String _randomHex(int charCount) {
-    final StringBuffer buffer = StringBuffer();
-    for (int i = 0; i < charCount; i++) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < charCount; i++) {
       buffer.write(_random.nextInt(16).toRadixString(16));
     }
 

@@ -1,6 +1,6 @@
+/// Barrel export for all world model data types.
 library;
 
-/// Barrel export for all world model data types.
 export 'core/world_model_entity.dart';
 export 'experience/episode.dart';
 export 'knowledge/belief.dart';

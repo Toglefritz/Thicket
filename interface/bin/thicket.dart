@@ -20,7 +20,7 @@ const String version = '0.1.0';
 /// This process is intended to be launched by an MCP client (such as Kiro or another compatible IDE) rather than
 /// invoked directly by a user.
 Future<void> main(List<String> arguments) async {
-  final McpServer server = McpServer(
+  final server = McpServer(
     serverName: 'thicket',
     serverVersion: version,
   );

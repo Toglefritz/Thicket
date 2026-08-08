@@ -51,27 +51,27 @@ McpTool learnTool() {
       },
       'required': ['projectPath', 'claim', 'rationale', 'confidence'],
     },
-    handler: (Map<String, dynamic> arguments) async {
-      final String projectPath = arguments['projectPath'] as String;
-      final String claim = arguments['claim'] as String;
-      final String rationale = arguments['rationale'] as String;
-      final double confidence = (arguments['confidence'] is String)
+    handler: (arguments) async {
+      final projectPath = arguments['projectPath'] as String;
+      final claim = arguments['claim'] as String;
+      final rationale = arguments['rationale'] as String;
+      final confidence = (arguments['confidence'] is String)
           ? double.parse(arguments['confidence'] as String)
           : (arguments['confidence'] as num).toDouble();
 
       // Resolve the project's storage directory.
-      final String storagePath = ProjectResolver.resolveStoragePath(
+      final storagePath = ProjectResolver.resolveStoragePath(
         projectPath,
       );
-      final EntityStore store = EntityStore(storagePath: storagePath);
+      final store = EntityStore(storagePath: storagePath);
 
       // Generate a unique ID for this belief.
-      final IdGenerator generator = IdGenerator();
-      final String beliefId = generator.generateShort();
+      final generator = IdGenerator();
+      final beliefId = generator.generateShort();
 
       // Create the belief entity.
-      final DateTime now = DateTime.now().toUtc();
-      final Belief belief = Belief(
+      final now = DateTime.now().toUtc();
+      final belief = Belief(
         id: beliefId,
         createdAt: now,
         updatedAt: now,

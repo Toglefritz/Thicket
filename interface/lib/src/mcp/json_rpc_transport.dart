@@ -9,12 +9,6 @@ import 'json_rpc_message.dart';
 /// Reads JSON messages from stdin (one per line) and writes JSON responses to stdout (one per line). This is the
 /// standard stdio transport for MCP servers.
 class JsonRpcTransport {
-  /// The line-based input stream to read JSON-RPC messages from.
-  final Stream<String> _input;
-
-  /// The output sink to write JSON-RPC responses to.
-  final IOSink _output;
-
   /// Creates a transport using the given input and output streams.
   ///
   /// Defaults to stdin and stdout when not provided, which is the standard MCP stdio transport.
@@ -23,6 +17,12 @@ class JsonRpcTransport {
     IOSink? output,
   }) : _input = input ?? _defaultInput(),
        _output = output ?? stdout;
+
+  /// The line-based input stream to read JSON-RPC messages from.
+  final Stream<String> _input;
+
+  /// The output sink to write JSON-RPC responses to.
+  final IOSink _output;
 
   /// Creates the default line-split UTF-8 stdin stream.
   static Stream<String> _defaultInput() {
@@ -41,7 +41,7 @@ class JsonRpcTransport {
       }
 
       try {
-        final Map<String, dynamic> json = jsonDecode(line) as Map<String, dynamic>;
+        final json = jsonDecode(line) as Map<String, dynamic>;
         await onMessage(JsonRpcMessage(json));
       } on FormatException {
         sendError(null, -32700, 'Parse error');
@@ -65,7 +65,7 @@ class JsonRpcTransport {
     String message, {
     Object? data,
   }) {
-    final Map<String, dynamic> error = <String, dynamic>{
+    final error = <String, dynamic>{
       'code': code,
       'message': message,
     };

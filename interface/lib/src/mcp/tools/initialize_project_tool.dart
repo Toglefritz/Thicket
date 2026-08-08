@@ -39,19 +39,20 @@ McpTool initializeProjectTool() {
         },
         'storageMode': {
           'type': 'string',
-          'description': 'The storage topology for the world model: "centralized" or "inRepo". Defaults to "centralized".',
+          'description':
+              'The storage topology for the world model: "centralized" or "inRepo". Defaults to "centralized".',
           'enum': ['centralized', 'inRepo'],
         },
       },
       'required': ['projectPath'],
     },
-    handler: (Map<String, dynamic> arguments) async {
-      final String? projectPath = arguments['projectPath'] as String?;
+    handler: (arguments) async {
+      final projectPath = arguments['projectPath'] as String?;
       if (projectPath == null || projectPath.isEmpty) {
         throw ArgumentError('projectPath is required');
       }
 
-      final Directory projectDir = Directory(projectPath);
+      final projectDir = Directory(projectPath);
       if (!projectDir.existsSync()) {
         throw ArgumentError(
           'Project directory does not exist: $projectPath',
@@ -59,11 +60,11 @@ McpTool initializeProjectTool() {
       }
 
       // Check if already initialized.
-      final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
-      final File identityFile = File(p.join(thicketDir.path, 'project.json'));
+      final thicketDir = Directory(p.join(projectPath, '.thicket'));
+      final identityFile = File(p.join(thicketDir.path, 'project.json'));
 
       if (identityFile.existsSync()) {
-        final Map<String, dynamic> existing = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+        final existing = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
         return {
           'status': 'already_initialized',
           'identity': existing,
@@ -71,16 +72,16 @@ McpTool initializeProjectTool() {
       }
 
       // Generate the project identity.
-      final IdGenerator generator = IdGenerator();
-      final String projectId = generator.generate();
-      final String projectName = (arguments['projectName'] as String?) ?? p.basename(projectPath);
-      final String storageMode = (arguments['storageMode'] as String?) ?? 'centralized';
+      final generator = IdGenerator();
+      final projectId = generator.generate();
+      final projectName = (arguments['projectName'] as String?) ?? p.basename(projectPath);
+      final storageMode = (arguments['storageMode'] as String?) ?? 'centralized';
 
       if (storageMode != 'centralized' && storageMode != 'inRepo') {
         throw ArgumentError('Invalid storageMode: $storageMode');
       }
 
-      final ProjectIdentity identity = ProjectIdentity(
+      final identity = ProjectIdentity(
         projectId: projectId,
         projectName: projectName,
         createdAt: DateTime.now().toUtc(),
@@ -98,14 +99,14 @@ McpTool initializeProjectTool() {
       if (storageMode == 'inRepo') {
         storagePath = p.join(projectPath, '.thicket', 'world_model');
       } else {
-        final String home = ProjectResolver.getHomeDirectory();
+        final home = ProjectResolver.getHomeDirectory();
         if (home.isEmpty) {
           throw StateError('Home directory environment variable is not set');
         }
         storagePath = p.join(home, '.thicket', 'projects', projectId);
       }
 
-      final Directory storageDir = Directory(storagePath);
+      final storageDir = Directory(storagePath);
       storageDir.createSync(recursive: true);
 
       return {

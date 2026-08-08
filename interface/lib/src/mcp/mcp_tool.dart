@@ -2,6 +2,14 @@
 ///
 /// Each tool has a name, description, input schema, and a handler that produces a result when called.
 class McpTool {
+  /// Creates a new [McpTool].
+  const McpTool({
+    required this.name,
+    required this.description,
+    required this.inputSchema,
+    required this.handler,
+  });
+
   /// The unique name of this tool.
   final String name;
 
@@ -21,13 +29,6 @@ class McpTool {
     Map<String, dynamic> arguments,
   )
   handler;
-
-  const McpTool({
-    required this.name,
-    required this.description,
-    required this.inputSchema,
-    required this.handler,
-  });
 
   /// Serializes this tool's metadata for a `tools/list` response.
   Map<String, dynamic> toListEntry() => {

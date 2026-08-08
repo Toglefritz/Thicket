@@ -23,7 +23,7 @@ void main() {
   });
   group('WorldModelEntity', () {
     test('round-trips through JSON', () {
-      final now = DateTime.utc(2025, 1, 1);
+      final now = DateTime.utc(2025);
       final entity = WorldModelEntity(id: 'test-id', createdAt: now, updatedAt: now);
 
       final json = entity.toJson();
@@ -37,7 +37,7 @@ void main() {
 
   group('ProjectIdentity', () {
     test('round-trips through JSON with defaults', () {
-      final now = DateTime.utc(2025, 1, 1);
+      final now = DateTime.utc(2025);
       final identity = ProjectIdentity(projectId: 'abc-123', projectName: 'My Project', createdAt: now);
 
       final json = identity.toJson();
@@ -50,7 +50,7 @@ void main() {
     });
 
     test('round-trips through JSON with inRepo storageMode', () {
-      final now = DateTime.utc(2025, 1, 1);
+      final now = DateTime.utc(2025);
       final identity = ProjectIdentity(
         projectId: 'abc-123',
         projectName: 'My Project',

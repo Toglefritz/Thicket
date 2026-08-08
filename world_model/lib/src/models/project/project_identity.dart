@@ -7,6 +7,24 @@
 /// The identifier remains the same even if the project is moved or renamed, allowing the world model to survive
 /// directory relocations.
 class ProjectIdentity {
+  /// Creates a new [ProjectIdentity] linked to a target project and its world model storage configuration.
+  const ProjectIdentity({
+    required this.projectId,
+    required this.projectName,
+    required this.createdAt,
+    this.storageMode = 'centralized',
+  });
+
+  /// Deserializes a project identity from the contents of a `.thicket/project.json` file.
+  factory ProjectIdentity.fromJson(Map<String, dynamic> json) {
+    return ProjectIdentity(
+      projectId: json['projectId'] as String,
+      projectName: json['projectName'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      storageMode: json['storageMode'] as String? ?? 'centralized',
+    );
+  }
+
   /// A stable unique identifier for this project's world model.
   ///
   /// Generated once when Thicket is first initialized for a project. Used as the directory name under
@@ -26,13 +44,6 @@ class ProjectIdentity {
   /// Can be 'centralized' (default) or 'inRepo'.
   final String storageMode;
 
-  const ProjectIdentity({
-    required this.projectId,
-    required this.projectName,
-    required this.createdAt,
-    this.storageMode = 'centralized',
-  });
-
   /// Serializes this identity to JSON for writing to `.thicket/project.json`.
   Map<String, dynamic> toJson() => {
     'projectId': projectId,
@@ -40,14 +51,4 @@ class ProjectIdentity {
     'createdAt': createdAt.toUtc().toIso8601String(),
     'storageMode': storageMode,
   };
-
-  /// Deserializes a project identity from the contents of a `.thicket/project.json` file.
-  factory ProjectIdentity.fromJson(Map<String, dynamic> json) {
-    return ProjectIdentity(
-      projectId: json['projectId'] as String,
-      projectName: json['projectName'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      storageMode: json['storageMode'] as String? ?? 'centralized',
-    );
-  }
 }

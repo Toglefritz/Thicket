@@ -43,38 +43,38 @@ McpTool recallTool() {
       },
       'required': ['projectPath'],
     },
-    handler: (Map<String, dynamic> arguments) async {
-      final String projectPath = arguments['projectPath'] as String;
-      final String? kindFilter = arguments['kind'] as String?;
+    handler: (arguments) async {
+      final projectPath = arguments['projectPath'] as String;
+      final kindFilter = arguments['kind'] as String?;
 
       // Resolve the project's storage directory.
-      final String storagePath = ProjectResolver.resolveStoragePath(
+      final storagePath = ProjectResolver.resolveStoragePath(
         projectPath,
       );
-      final EntityStore store = EntityStore(storagePath: storagePath);
+      final store = EntityStore(storagePath: storagePath);
 
       // Load all episodes from the store.
-      final List<Map<String, dynamic>> allEpisodes = await store.listAll(
+      final allEpisodes = await store.listAll(
         collection: 'episodes',
       );
 
       // Deserialize into typed episodes for filtering.
-      List<Episode> episodes = allEpisodes.map((Map<String, dynamic> json) => Episode.fromJson(json)).toList();
+      var episodes = allEpisodes.map(Episode.fromJson).toList();
 
       // Apply kind filter.
       if (kindFilter != null) {
-        final EpisodeKind kind = EpisodeKind.values.byName(kindFilter);
-        episodes = episodes.where((Episode ep) => ep.kind == kind).toList();
+        final kind = EpisodeKind.values.byName(kindFilter);
+        episodes = episodes.where((ep) => ep.kind == kind).toList();
       }
 
       // Sort by creation time, most recent first.
       episodes.sort(
-        (Episode a, Episode b) => b.createdAt.compareTo(a.createdAt),
+        (a, b) => b.createdAt.compareTo(a.createdAt),
       );
 
       return {
         'count': episodes.length,
-        'episodes': episodes.map((Episode ep) => ep.toJson()).toList(),
+        'episodes': episodes.map((ep) => ep.toJson()).toList(),
       };
     },
   );

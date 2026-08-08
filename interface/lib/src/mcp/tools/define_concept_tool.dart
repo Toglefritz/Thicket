@@ -46,22 +46,22 @@ McpTool defineConceptTool() {
       },
       'required': ['projectPath', 'name', 'description'],
     },
-    handler: (Map<String, dynamic> arguments) async {
-      final String projectPath = arguments['projectPath'] as String;
-      final String name = arguments['name'] as String;
-      final String description = arguments['description'] as String;
+    handler: (arguments) async {
+      final projectPath = arguments['projectPath'] as String;
+      final name = arguments['name'] as String;
+      final description = arguments['description'] as String;
 
       // Resolve the project's storage directory.
-      final String storagePath = ProjectResolver.resolveStoragePath(projectPath);
-      final EntityStore store = EntityStore(storagePath: storagePath);
+      final storagePath = ProjectResolver.resolveStoragePath(projectPath);
+      final store = EntityStore(storagePath: storagePath);
 
       // Generate a unique ID for this concept.
-      final IdGenerator generator = IdGenerator();
-      final String conceptId = generator.generateShort();
+      final generator = IdGenerator();
+      final conceptId = generator.generateShort();
 
       // Create the concept entity.
-      final DateTime now = DateTime.now().toUtc();
-      final Concept concept = Concept(
+      final now = DateTime.now().toUtc();
+      final concept = Concept(
         id: conceptId,
         createdAt: now,
         updatedAt: now,

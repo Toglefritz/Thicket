@@ -15,6 +15,30 @@ part 'belief_status.dart';
 /// correct. New evidence may strengthen a belief, reduce confidence in it, or cause it to be revised or superseded
 /// entirely.
 class Belief extends WorldModelEntity {
+  /// Creates a new [Belief] with the given unique identifier, timestamps, claim, rationale, confidence, and status.
+  const Belief({
+    required super.id,
+    required super.createdAt,
+    required super.updatedAt,
+    required this.claim,
+    required this.rationale,
+    required this.confidence,
+    required this.status,
+  });
+
+  /// Reconstructs a [Belief] from a JSON map.
+  factory Belief.fromJson(Map<String, dynamic> json) {
+    return Belief(
+      id: json['id'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      claim: json['claim'] as String,
+      rationale: json['rationale'] as String,
+      confidence: (json['confidence'] as num).toDouble(),
+      status: BeliefStatus.values.byName(json['status'] as String),
+    );
+  }
+
   /// A concise statement of what the agent believes to be true.
   final String claim;
 
@@ -29,16 +53,6 @@ class Belief extends WorldModelEntity {
   /// The current lifecycle status of this belief.
   final BeliefStatus status;
 
-  const Belief({
-    required super.id,
-    required super.createdAt,
-    required super.updatedAt,
-    required this.claim,
-    required this.rationale,
-    required this.confidence,
-    required this.status,
-  });
-
   @override
   Map<String, dynamic> toJson() => {
     ...super.toJson(),
@@ -47,17 +61,4 @@ class Belief extends WorldModelEntity {
     'confidence': confidence,
     'status': status.name,
   };
-
-  /// Reconstructs a [Belief] from a JSON map.
-  factory Belief.fromJson(Map<String, dynamic> json) {
-    return Belief(
-      id: json['id'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      claim: json['claim'] as String,
-      rationale: json['rationale'] as String,
-      confidence: (json['confidence'] as num).toDouble(),
-      status: BeliefStatus.values.byName(json['status'] as String),
-    );
-  }
 }

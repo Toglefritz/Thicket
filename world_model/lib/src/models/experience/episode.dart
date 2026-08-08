@@ -14,17 +14,7 @@ part 'episode_kind.dart';
 /// that failed, the reason an implementation was rejected, an unexpected interaction between subsystems, or the outcome
 /// of a debugging investigation.
 class Episode extends WorldModelEntity {
-  /// The category of experience this episode represents.
-  final EpisodeKind kind;
-
-  /// A concise summary of the experience.
-  ///
-  /// Should be brief enough to be useful in retrieval results without requiring the full content to be read.
-  final String summary;
-
-  /// The full description of the experience, including relevant context, reasoning, and outcome.
-  final String content;
-
+  /// Creates a new [Episode] with the given unique identifier, timestamps, kind, summary, and content.
   const Episode({
     required super.id,
     required super.createdAt,
@@ -33,14 +23,6 @@ class Episode extends WorldModelEntity {
     required this.summary,
     required this.content,
   });
-
-  @override
-  Map<String, dynamic> toJson() => {
-    ...super.toJson(),
-    'kind': kind.name,
-    'summary': summary,
-    'content': content,
-  };
 
   /// Reconstructs an [Episode] from a JSON map.
   factory Episode.fromJson(Map<String, dynamic> json) {
@@ -53,4 +35,23 @@ class Episode extends WorldModelEntity {
       content: json['content'] as String,
     );
   }
+
+  /// The category of experience this episode represents.
+  final EpisodeKind kind;
+
+  /// A concise summary of the experience.
+  ///
+  /// Should be brief enough to be useful in retrieval results without requiring the full content to be read.
+  final String summary;
+
+  /// The full description of the experience, including relevant context, reasoning, and outcome.
+  final String content;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...super.toJson(),
+    'kind': kind.name,
+    'summary': summary,
+    'content': content,
+  };
 }

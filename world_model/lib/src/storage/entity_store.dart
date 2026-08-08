@@ -10,6 +10,11 @@ import '../models/core/world_model_entity.dart';
 /// Each entity type is stored in its own subdirectory under the project's storage root (e.g.
 /// `~/.thicket/projects/<id>/episodes/`). Each entity occupies a single JSON file named by its ID.
 class EntityStore {
+  /// Creates a store rooted at the given directory path.
+  ///
+  /// The directory does not need to exist yet; it will be created on the first write operation.
+  EntityStore({required String storagePath}) : _storageRoot = Directory(storagePath);
+
   /// The root directory for this project's world model storage.
   ///
   /// Typically `~/.thicket/projects/<id>/`.
@@ -20,23 +25,17 @@ class EntityStore {
   /// Two-space indentation keeps the stored files easy to inspect during development and debugging.
   static const JsonEncoder _encoder = JsonEncoder.withIndent('  ');
 
-  /// Creates a store rooted at the given directory path.
-  ///
-  /// The directory does not need to exist yet; it will be created on the first write operation.
-  EntityStore({required String storagePath}) : _storageRoot = Directory(storagePath);
-
   /// Saves a new entity to disk.
   ///
   /// The entity is written to `<storageRoot>/<collection>/<id>.json`. If a file already exists at that path, a
-  /// [StateError] is thrown to prevent accidental overwrites. Use [update] for modifying existing
-  /// entities.
+  /// [StateError] is thrown to prevent accidental overwrites. Use [update] for modifying existing entities.
   ///
   /// The [collection] parameter determines the subdirectory (e.g. "episodes", "beliefs", "concepts").
   Future<void> save({
     required String collection,
     required WorldModelEntity entity,
   }) async {
-    final File file = _fileFor(collection, entity.id);
+    final file = _fileFor(collection, entity.id);
 
     if (file.existsSync()) {
       throw StateError('Entity "${entity.id}" already exists in "$collection".');
@@ -54,7 +53,7 @@ class EntityStore {
     required String collection,
     required WorldModelEntity entity,
   }) async {
-    final File file = _fileFor(collection, entity.id);
+    final file = _fileFor(collection, entity.id);
 
     if (!file.existsSync()) {
       throw StateError(
@@ -73,7 +72,7 @@ class EntityStore {
     required String collection,
     required String id,
   }) async {
-    final File file = _fileFor(collection, id);
+    final file = _fileFor(collection, id);
 
     if (!file.existsSync()) {
       return null;
@@ -91,22 +90,22 @@ class EntityStore {
   Future<List<Map<String, dynamic>>> listAll({
     required String collection,
   }) async {
-    final Directory collectionDir = _collectionDir(collection);
+    final collectionDir = _collectionDir(collection);
 
     if (!collectionDir.existsSync()) {
       return [];
     }
 
-    final List<Map<String, dynamic>> results = [];
+    final results = <Map<String, dynamic>>[];
 
     final List<FileSystemEntity> entities = collectionDir
         .listSync()
         .whereType<File>()
-        .where((File file) => file.path.endsWith('.json'))
+        .where((file) => file.path.endsWith('.json'))
         .toList();
 
-    for (final FileSystemEntity entity in entities) {
-      final Map<String, dynamic> json = _readJsonFile(entity as File);
+    for (final entity in entities) {
+      final json = _readJsonFile(entity as File);
       results.add(json);
     }
 
@@ -120,7 +119,7 @@ class EntityStore {
     required String collection,
     required String id,
   }) async {
-    final File file = _fileFor(collection, id);
+    final file = _fileFor(collection, id);
 
     if (!file.existsSync()) {
       return false;
@@ -143,7 +142,7 @@ class EntityStore {
 
   /// Reads and decodes a JSON file from disk.
   Map<String, dynamic> _readJsonFile(File file) {
-    final String contents = file.readAsStringSync();
+    final contents = file.readAsStringSync();
 
     return jsonDecode(contents) as Map<String, dynamic>;
   }

@@ -6,24 +6,24 @@ import 'package:thicket/src/storage/entity_store.dart';
 
 void main() {
   late EntityStore store;
-  const String testPath = '/tmp/thicket-store-test';
+  const testPath = '/tmp/thicket-store-test';
 
   setUp(() {
     store = EntityStore(storagePath: testPath);
   });
 
   tearDown(() {
-    final Directory dir = Directory(testPath);
+    final dir = Directory(testPath);
     if (dir.existsSync()) {
       dir.deleteSync(recursive: true);
     }
   });
 
   test('save and load an episode', () async {
-    final Episode episode = Episode(
+    final episode = Episode(
       id: 'ep-001',
-      createdAt: DateTime.utc(2025, 1, 1),
-      updatedAt: DateTime.utc(2025, 1, 1),
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2025),
       kind: EpisodeKind.constraintDiscovered,
       summary: 'Auth tokens must be refreshed',
       content: 'Discovered that the token service requires proactive refresh.',
@@ -31,7 +31,7 @@ void main() {
 
     await store.save(collection: 'episodes', entity: episode);
 
-    final Map<String, dynamic>? loaded = await store.load(
+    final loaded = await store.load(
       collection: 'episodes',
       id: 'ep-001',
     );
@@ -42,16 +42,16 @@ void main() {
   });
 
   test('listAll returns all entities in a collection', () async {
-    final Episode first = Episode(
+    final first = Episode(
       id: 'ep-001',
-      createdAt: DateTime.utc(2025, 1, 1),
-      updatedAt: DateTime.utc(2025, 1, 1),
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2025),
       kind: EpisodeKind.taskPerformed,
       summary: 'First episode',
       content: 'Content one.',
     );
 
-    final Episode second = Episode(
+    final second = Episode(
       id: 'ep-002',
       createdAt: DateTime.utc(2025, 1, 2),
       updatedAt: DateTime.utc(2025, 1, 2),
@@ -63,7 +63,7 @@ void main() {
     await store.save(collection: 'episodes', entity: first);
     await store.save(collection: 'episodes', entity: second);
 
-    final List<Map<String, dynamic>> all = await store.listAll(
+    final all = await store.listAll(
       collection: 'episodes',
     );
 
@@ -71,10 +71,10 @@ void main() {
   });
 
   test('save throws StateError on duplicate', () async {
-    final Episode episode = Episode(
+    final episode = Episode(
       id: 'ep-001',
-      createdAt: DateTime.utc(2025, 1, 1),
-      updatedAt: DateTime.utc(2025, 1, 1),
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2025),
       kind: EpisodeKind.taskPerformed,
       summary: 'An episode',
       content: 'Content.',
@@ -89,10 +89,10 @@ void main() {
   });
 
   test('update succeeds', () async {
-    final Episode original = Episode(
+    final original = Episode(
       id: 'ep-001',
-      createdAt: DateTime.utc(2025, 1, 1),
-      updatedAt: DateTime.utc(2025, 1, 1),
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2025),
       kind: EpisodeKind.taskPerformed,
       summary: 'Original summary',
       content: 'Original content.',
@@ -100,9 +100,9 @@ void main() {
 
     await store.save(collection: 'episodes', entity: original);
 
-    final Episode updated = Episode(
+    final updated = Episode(
       id: 'ep-001',
-      createdAt: DateTime.utc(2025, 1, 1),
+      createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025, 1, 2),
       kind: EpisodeKind.taskPerformed,
       summary: 'Updated summary',
@@ -114,7 +114,7 @@ void main() {
       entity: updated,
     );
 
-    final Map<String, dynamic>? loaded = await store.load(
+    final loaded = await store.load(
       collection: 'episodes',
       id: 'ep-001',
     );
@@ -123,10 +123,10 @@ void main() {
   });
 
   test('delete removes entity and returns true', () async {
-    final Episode episode = Episode(
+    final episode = Episode(
       id: 'ep-001',
-      createdAt: DateTime.utc(2025, 1, 1),
-      updatedAt: DateTime.utc(2025, 1, 1),
+      createdAt: DateTime.utc(2025),
+      updatedAt: DateTime.utc(2025),
       kind: EpisodeKind.taskPerformed,
       summary: 'To delete',
       content: 'Content.',
@@ -134,13 +134,13 @@ void main() {
 
     await store.save(collection: 'episodes', entity: episode);
 
-    final bool result = await store.delete(
+    final result = await store.delete(
       collection: 'episodes',
       id: 'ep-001',
     );
     expect(result, isTrue);
 
-    final Map<String, dynamic>? loaded = await store.load(
+    final loaded = await store.load(
       collection: 'episodes',
       id: 'ep-001',
     );
@@ -148,7 +148,7 @@ void main() {
   });
 
   test('delete returns false for nonexistent entity', () async {
-    final bool result = await store.delete(
+    final result = await store.delete(
       collection: 'episodes',
       id: 'nonexistent',
     );
@@ -156,7 +156,7 @@ void main() {
   });
 
   test('load returns null for nonexistent entity', () async {
-    final Map<String, dynamic>? loaded = await store.load(
+    final loaded = await store.load(
       collection: 'episodes',
       id: 'nonexistent',
     );

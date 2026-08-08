@@ -57,25 +57,25 @@ McpTool rememberTool() {
       },
       'required': ['projectPath', 'kind', 'summary', 'content'],
     },
-    handler: (Map<String, dynamic> arguments) async {
-      final String projectPath = arguments['projectPath'] as String;
-      final String kindStr = arguments['kind'] as String;
-      final String summary = arguments['summary'] as String;
-      final String content = arguments['content'] as String;
+    handler: (arguments) async {
+      final projectPath = arguments['projectPath'] as String;
+      final kindStr = arguments['kind'] as String;
+      final summary = arguments['summary'] as String;
+      final content = arguments['content'] as String;
 
       // Resolve the project's storage directory.
-      final String storagePath = ProjectResolver.resolveStoragePath(projectPath);
+      final storagePath = ProjectResolver.resolveStoragePath(projectPath);
 
       // Generate a unique ID for this episode.
-      final IdGenerator generator = IdGenerator();
-      final String episodeId = generator.generateShort();
+      final generator = IdGenerator();
+      final episodeId = generator.generateShort();
 
       // Parse the episode kind.
-      final EpisodeKind kind = EpisodeKind.values.byName(kindStr);
+      final kind = EpisodeKind.values.byName(kindStr);
 
       // Create the episode entity.
-      final DateTime now = DateTime.now().toUtc();
-      final Episode episode = Episode(
+      final now = DateTime.now().toUtc();
+      final episode = Episode(
         id: episodeId,
         createdAt: now,
         updatedAt: now,
@@ -85,7 +85,7 @@ McpTool rememberTool() {
       );
 
       // Persist to the store.
-      final EntityStore store = EntityStore(storagePath: storagePath);
+      final store = EntityStore(storagePath: storagePath);
       await store.save(collection: 'episodes', entity: episode);
 
       return {

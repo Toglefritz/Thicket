@@ -13,17 +13,7 @@ part 'concept_status.dart';
 /// The ontology is flexible: the agent can introduce new concepts as it learns what matters for a particular project.
 /// However, changes are tracked and require rationale to discourage unnecessary churn.
 class Concept extends WorldModelEntity {
-  /// The name of this concept.
-  ///
-  /// Should be a concise noun or noun phrase (e.g. "Component", "NavigationFlow", "TimingConstraint").
-  final String name;
-
-  /// A description of what this concept represents and when it should be applied.
-  final String description;
-
-  /// The current lifecycle status of this concept.
-  final ConceptStatus status;
-
+  /// Creates a new [Concept] with the given unique identifier, timestamps, name, description, and status.
   const Concept({
     required super.id,
     required super.createdAt,
@@ -32,14 +22,6 @@ class Concept extends WorldModelEntity {
     required this.description,
     required this.status,
   });
-
-  @override
-  Map<String, dynamic> toJson() => {
-    ...super.toJson(),
-    'name': name,
-    'description': description,
-    'status': status.name,
-  };
 
   /// Reconstructs a [Concept] from a JSON map.
   factory Concept.fromJson(Map<String, dynamic> json) {
@@ -52,4 +34,23 @@ class Concept extends WorldModelEntity {
       status: ConceptStatus.values.byName(json['status'] as String),
     );
   }
+
+  /// The name of this concept.
+  ///
+  /// Should be a concise noun or noun phrase (e.g. "Component", "NavigationFlow", "TimingConstraint").
+  final String name;
+
+  /// A description of what this concept represents and when it should be applied.
+  final String description;
+
+  /// The current lifecycle status of this concept.
+  final ConceptStatus status;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    ...super.toJson(),
+    'name': name,
+    'description': description,
+    'status': status.name,
+  };
 }

@@ -19,13 +19,13 @@ void main(List<String> arguments) async {
     exit(1);
   }
 
-  final String toolName = arguments.first;
-  final Map<String, dynamic> toolArguments = _parseArguments(
+  final toolName = arguments.first;
+  final toolArguments = _parseArguments(
     arguments.skip(1).toList(),
   );
 
   // Spawn the MCP server as a subprocess.
-  final Process server = await Process.start(
+  final server = await Process.start(
     'dart',
     ['run', 'bin/thicket.dart'],
     workingDirectory: Directory.current.path,
@@ -33,11 +33,11 @@ void main(List<String> arguments) async {
 
   // Set up a single stream subscription that feeds lines into a queue. This avoids re-listening to stdout multiple
   // times.
-  final StreamController<String> lineController = StreamController<String>();
+  final lineController = StreamController<String>();
   server.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(lineController.add);
-  final StreamQueue lineQueue = StreamQueue(lineController.stream);
+  final lineQueue = StreamQueue(lineController.stream);
 
-  int requestId = 0;
+  var requestId = 0;
 
   /// Sends a JSON-RPC request and reads the next response line.
   Future<Map<String, dynamic>> sendRequest(
@@ -45,7 +45,7 @@ void main(List<String> arguments) async {
     Map<String, dynamic>? params,
   }) async {
     requestId++;
-    final Map<String, dynamic> request = {
+    final request = <String, dynamic>{
       'jsonrpc': '2.0',
       'id': requestId,
       'method': method,
@@ -55,13 +55,13 @@ void main(List<String> arguments) async {
     }
 
     server.stdin.writeln(jsonEncode(request));
-    final String line = await lineQueue.next;
+    final line = await lineQueue.next;
     return jsonDecode(line) as Map<String, dynamic>;
   }
 
   /// Sends a JSON-RPC notification (no response expected).
   void sendNotification(String method) {
-    final Map<String, dynamic> notification = {
+    final notification = <String, dynamic>{
       'jsonrpc': '2.0',
       'method': method,
     };
@@ -70,7 +70,7 @@ void main(List<String> arguments) async {
 
   try {
     // Step 1: Initialize handshake.
-    final Map<String, dynamic> initResult = await sendRequest(
+    final initResult = await sendRequest(
       'initialize',
       params: {
         'protocolVersion': '2025-06-18',
@@ -79,7 +79,7 @@ void main(List<String> arguments) async {
       },
     );
 
-    final Map<String, dynamic>? initError = initResult['error'] as Map<String, dynamic>?;
+    final initError = initResult['error'] as Map<String, dynamic>?;
     if (initError != null) {
       stderr.writeln('Initialize failed: ${initError['message']}');
       server.kill();
@@ -90,7 +90,7 @@ void main(List<String> arguments) async {
     sendNotification('notifications/initialized');
 
     // Step 3: Call the requested tool.
-    final Map<String, dynamic> callResult = await sendRequest(
+    final callResult = await sendRequest(
       'tools/call',
       params: {
         'name': toolName,
@@ -99,25 +99,25 @@ void main(List<String> arguments) async {
     );
 
     // Step 4: Print the result.
-    final Map<String, dynamic>? callError = callResult['error'] as Map<String, dynamic>?;
+    final callError = callResult['error'] as Map<String, dynamic>?;
     if (callError != null) {
       stderr.writeln('Error: ${callError['message']}');
       server.kill();
       exit(1);
     }
 
-    final Map<String, dynamic> result = callResult['result'] as Map<String, dynamic>;
-    final bool isError = (result['isError'] as bool?) ?? false;
+    final result = callResult['result'] as Map<String, dynamic>;
+    final isError = (result['isError'] as bool?) ?? false;
 
     if (isError) {
       stderr.writeln('Tool error:');
     }
 
     // Extract and pretty-print the content.
-    final List<dynamic> content = result['content'] as List<dynamic>;
+    final content = result['content'] as List<dynamic>;
     for (final dynamic block in content) {
-      final Map<String, dynamic> contentBlock = block as Map<String, dynamic>;
-      final String text = contentBlock['text'] as String;
+      final contentBlock = block as Map<String, dynamic>;
+      final text = contentBlock['text'] as String;
 
       // Attempt to parse as JSON for pretty-printing.
       try {
@@ -142,14 +142,9 @@ void main(List<String> arguments) async {
 /// A minimal async queue that yields values from a stream one at a time, allowing sequential awaits on a
 /// broadcast-style source.
 class StreamQueue {
-  final Stream<String> _stream;
-  final List<String> _buffer = [];
-  final List<Completer<String>> _waiters = [];
-  late final StreamSubscription<String> _subscription;
-
   StreamQueue(this._stream) {
     _subscription = _stream.listen(
-      (String line) {
+      (line) {
         if (_waiters.isNotEmpty) {
           _waiters.removeAt(0).complete(line);
         } else {
@@ -157,20 +152,24 @@ class StreamQueue {
         }
       },
       onDone: () {
-        for (final Completer<String> waiter in _waiters) {
+        for (final waiter in _waiters) {
           waiter.completeError(StateError('Stream closed'));
         }
         _waiters.clear();
       },
     );
   }
+  final Stream<String> _stream;
+  final List<String> _buffer = [];
+  final List<Completer<String>> _waiters = [];
+  late final StreamSubscription<String> _subscription;
 
   /// Returns the next line from the stream, waiting if necessary.
   Future<String> get next {
     if (_buffer.isNotEmpty) {
       return Future<String>.value(_buffer.removeAt(0));
     }
-    final Completer<String> completer = Completer<String>();
+    final completer = Completer<String>();
     _waiters.add(completer);
     return completer.future;
   }
@@ -184,14 +183,14 @@ class StreamQueue {
 /// Keys must be prefixed with `--`. The following argument is treated as the value unless it also starts with `--`, in
 /// which case the key is treated as a boolean flag.
 Map<String, dynamic> _parseArguments(List<String> args) {
-  final Map<String, dynamic> result = {};
-  int i = 0;
+  final result = <String, dynamic>{};
+  var i = 0;
 
   while (i < args.length) {
-    final String arg = args[i];
+    final arg = args[i];
 
     if (arg.startsWith('--')) {
-      final String key = arg.substring(2);
+      final key = arg.substring(2);
 
       if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
         result[key] = args[i + 1];
@@ -214,7 +213,7 @@ void _printUsage() {
   stderr.writeln(
     'Usage: dart run tool/mcp_call.dart <tool_name> [--key value ...]',
   );
-  stderr.writeln('');
+  stderr.writeln();
   stderr.writeln('Examples:');
   stderr.writeln('  dart run tool/mcp_call.dart get_version');
   stderr.writeln(

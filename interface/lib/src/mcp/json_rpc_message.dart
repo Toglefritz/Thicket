@@ -2,11 +2,11 @@
 ///
 /// This is a thin wrapper around the decoded JSON map, providing convenient accessors for the standard JSON-RPC fields.
 class JsonRpcMessage {
-  /// The raw decoded JSON map for this message.
-  final Map<String, dynamic> raw;
-
   /// Creates a message wrapping the given decoded JSON map.
   const JsonRpcMessage(this.raw);
+
+  /// The raw decoded JSON map for this message.
+  final Map<String, dynamic> raw;
 
   /// The JSON-RPC version string. Always "2.0" for valid messages.
   String get jsonrpc => raw['jsonrpc'] as String;
