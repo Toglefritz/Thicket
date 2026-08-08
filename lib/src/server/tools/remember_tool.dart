@@ -84,7 +84,7 @@ McpTool rememberTool() {
 
       // Generate a unique ID for this episode.
       final IdGenerator generator = IdGenerator();
-      final String episodeId = generator.generate();
+      final String episodeId = generator.generateShort();
 
       // Parse the episode kind.
       final EpisodeKind kind = EpisodeKind.values.byName(kindStr);

@@ -76,7 +76,7 @@ McpTool defineConceptTool() {
 
       // Generate a unique ID for this concept.
       final IdGenerator generator = IdGenerator();
-      final String conceptId = generator.generate();
+      final String conceptId = generator.generateShort();
 
       // Create the concept entity.
       final DateTime now = DateTime.now().toUtc();

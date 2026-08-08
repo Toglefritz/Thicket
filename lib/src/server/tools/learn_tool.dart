@@ -101,7 +101,7 @@ McpTool learnTool() {
 
       // Generate a unique ID for this belief.
       final IdGenerator generator = IdGenerator();
-      final String beliefId = generator.generate();
+      final String beliefId = generator.generateShort();
 
       // Create the belief entity.
       final DateTime now = DateTime.now().toUtc();

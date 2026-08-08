@@ -29,6 +29,13 @@ class IdGenerator {
     return '$adjective-$noun-$suffix';
   }
 
+  /// Generates a short, random unique hexadecimal identifier.
+  ///
+  /// This is suitable for lower-level documents where the human-readable adjective-noun format is not needed.
+  String generateShort({int length = 8}) {
+    return _randomHex(length);
+  }
+
   /// Produces a random hexadecimal string of the given character count.
   ///
   /// A [charCount] of 4 produces a 4-character hex string. The word combination already provides significant entropy,
