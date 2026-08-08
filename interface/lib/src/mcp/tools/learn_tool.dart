@@ -1,6 +1,4 @@
-import '../../models/knowledge/belief.dart';
-import '../../storage/entity_store.dart';
-import '../../utils/id_generator.dart';
+import 'package:thicket/thicket.dart';
 import '../mcp_tool.dart';
 import 'project_resolver.dart';
 

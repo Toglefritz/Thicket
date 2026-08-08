@@ -1,5 +1,4 @@
-import '../../models/experience/episode.dart';
-import '../../storage/entity_store.dart';
+import 'package:thicket/thicket.dart';
 import '../mcp_tool.dart';
 import 'project_resolver.dart';
 

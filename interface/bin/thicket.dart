@@ -1,10 +1,10 @@
-import 'package:thicket/src/server/mcp_server.dart';
-import 'package:thicket/src/server/tools/define_concept_tool.dart';
-import 'package:thicket/src/server/tools/get_version_tool.dart';
-import 'package:thicket/src/server/tools/initialize_project_tool.dart';
-import 'package:thicket/src/server/tools/learn_tool.dart';
-import 'package:thicket/src/server/tools/recall_tool.dart';
-import 'package:thicket/src/server/tools/remember_tool.dart';
+import 'package:thicket_interface/src/mcp/mcp_server.dart';
+import 'package:thicket_interface/src/mcp/tools/define_concept_tool.dart';
+import 'package:thicket_interface/src/mcp/tools/get_version_tool.dart';
+import 'package:thicket_interface/src/mcp/tools/initialize_project_tool.dart';
+import 'package:thicket_interface/src/mcp/tools/learn_tool.dart';
+import 'package:thicket_interface/src/mcp/tools/recall_tool.dart';
+import 'package:thicket_interface/src/mcp/tools/remember_tool.dart';
 
 /// The current version of the Thicket server.
 ///

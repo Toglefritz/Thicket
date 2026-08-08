@@ -101,7 +101,7 @@ class McpServer {
   /// Handles the `tools/list` method by returning metadata for all registered tools.
   void _handleToolsList(JsonRpcMessage message) {
     _transport.sendResult(message.id, {
-      'tools': _tools.values.map((t) => t.toListEntry()).toList(),
+      'tools': _tools.values.map((McpTool t) => t.toListEntry()).toList(),
     });
   }
 

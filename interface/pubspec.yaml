@@ -1,14 +1,15 @@
-name: thicket
-description: An experimental persistent world model for LLM-based software engineering agents
+name: thicket_interface
+description: The interface layer for Thicket, including MCP server and tools.
 version: 0.1.0
 publish_to: none
 
 environment:
   sdk: ^3.12.2
 
-# Add regular dependencies here.
 dependencies:
   path: ^1.9.0
+  thicket:
+    path: ../world_model
 
 dev_dependencies:
   lints: ^6.0.0

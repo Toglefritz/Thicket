@@ -3,8 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import '../../models/project/project_identity.dart';
-import '../../utils/id_generator.dart';
+import 'package:thicket/thicket.dart';
 import '../mcp_tool.dart';
 import 'project_resolver.dart';
 
