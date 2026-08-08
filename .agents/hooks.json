@@ -1,0 +1,18 @@
+{
+  "thicket-recall": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "./scripts/pre_invocation.sh"
+      }
+    ]
+  },
+  "thicket-record": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "./scripts/stop.sh"
+      }
+    ]
+  }
+}
