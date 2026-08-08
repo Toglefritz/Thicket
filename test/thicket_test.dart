@@ -1,7 +1,27 @@
 import 'package:thicket/thicket.dart';
+import 'package:thicket/src/utils/id_generator.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('IdGenerator', () {
+    test('generate returns adjective-noun-hex format', () {
+      final generator = IdGenerator();
+      final id = generator.generate();
+      expect(id, matches(RegExp(r'^[a-z]+-[a-z]+-[0-9a-f]{4}$')));
+    });
+
+    test('generateShort returns short hex format of default length', () {
+      final generator = IdGenerator();
+      final id = generator.generateShort();
+      expect(id, matches(RegExp(r'^[0-9a-f]{8}$')));
+    });
+
+    test('generateShort returns short hex format of custom length', () {
+      final generator = IdGenerator();
+      final id = generator.generateShort(length: 12);
+      expect(id, matches(RegExp(r'^[0-9a-f]{12}$')));
+    });
+  });
   group('WorldModelEntity', () {
     test('round-trips through JSON', () {
       final now = DateTime.utc(2025, 1, 1);

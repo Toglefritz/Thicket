@@ -13,18 +13,7 @@ if [ "$INVOCATION_NUM" -eq 1 ] && [ -n "$WORKSPACE_PATH" ]; then
     '{
       injectSteps: [
         {
-          toolCall: {
-            name: "call_mcp_tool",
-            args: {
-              ServerName: "thicket",
-              ToolName: "recall",
-              Arguments: {
-                projectPath: $path
-              },
-              toolAction: "Recalling prior experiences from world model",
-              toolSummary: "Recall experiences"
-            }
-          }
+          ephemeralMessage: ("You are working in the Thicket workspace at: " + $path + ". Please recall any prior experiences and memories by calling the `recall` tool from the `thicket` MCP server with `projectPath` set to \"" + $path + "\".")
         }
       ]
     }'
