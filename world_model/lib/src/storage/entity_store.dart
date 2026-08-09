@@ -13,7 +13,8 @@ class EntityStore {
   /// Creates a store rooted at the given directory path.
   ///
   /// The directory does not need to exist yet; it will be created on the first write operation.
-  EntityStore({required String storagePath}) : _storageRoot = Directory(storagePath);
+  EntityStore({required String storagePath})
+    : _storageRoot = Directory(storagePath);
 
   /// The root directory for this project's world model storage.
   ///
@@ -35,10 +36,12 @@ class EntityStore {
     required String collection,
     required WorldModelEntity entity,
   }) async {
-    final file = _fileFor(collection, entity.id);
+    final File file = _fileFor(collection, entity.id);
 
     if (file.existsSync()) {
-      throw StateError('Entity "${entity.id}" already exists in "$collection".');
+      throw StateError(
+        'Entity "${entity.id}" already exists in "$collection".',
+      );
     }
 
     _writeJsonFile(file, entity.toJson());
@@ -53,7 +56,7 @@ class EntityStore {
     required String collection,
     required WorldModelEntity entity,
   }) async {
-    final file = _fileFor(collection, entity.id);
+    final File file = _fileFor(collection, entity.id);
 
     if (!file.existsSync()) {
       throw StateError(
@@ -72,7 +75,7 @@ class EntityStore {
     required String collection,
     required String id,
   }) async {
-    final file = _fileFor(collection, id);
+    final File file = _fileFor(collection, id);
 
     if (!file.existsSync()) {
       return null;
@@ -90,22 +93,22 @@ class EntityStore {
   Future<List<Map<String, dynamic>>> listAll({
     required String collection,
   }) async {
-    final collectionDir = _collectionDir(collection);
+    final Directory collectionDir = _collectionDir(collection);
 
     if (!collectionDir.existsSync()) {
-      return [];
+      return <Map<String, dynamic>>[];
     }
 
-    final results = <Map<String, dynamic>>[];
+    final List<Map<String, dynamic>> results = <Map<String, dynamic>>[];
 
-    final List<FileSystemEntity> entities = collectionDir
+    final List<File> entities = collectionDir
         .listSync()
         .whereType<File>()
-        .where((file) => file.path.endsWith('.json'))
+        .where((File file) => file.path.endsWith('.json'))
         .toList();
 
-    for (final entity in entities) {
-      final json = _readJsonFile(entity as File);
+    for (final File entity in entities) {
+      final Map<String, dynamic> json = _readJsonFile(entity);
       results.add(json);
     }
 
@@ -119,7 +122,7 @@ class EntityStore {
     required String collection,
     required String id,
   }) async {
-    final file = _fileFor(collection, id);
+    final File file = _fileFor(collection, id);
 
     if (!file.existsSync()) {
       return false;
@@ -142,7 +145,7 @@ class EntityStore {
 
   /// Reads and decodes a JSON file from disk.
   Map<String, dynamic> _readJsonFile(File file) {
-    final contents = file.readAsStringSync();
+    final String contents = file.readAsStringSync();
 
     return jsonDecode(contents) as Map<String, dynamic>;
   }

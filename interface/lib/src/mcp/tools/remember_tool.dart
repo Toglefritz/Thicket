@@ -28,15 +28,18 @@ McpTool rememberTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description': 'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description':
+              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
         'id': <String, String>{
           'type': 'string',
-          'description': 'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
+          'description':
+              'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
         },
         'data': <String, String>{
           'type': 'object',
-          'description': 'The flexible JSON payload containing the entity properties.',
+          'description':
+              'The flexible JSON payload containing the entity properties.',
         },
       },
       'required': <String>['projectPath', 'collection', 'data'],
@@ -45,35 +48,53 @@ McpTool rememberTool() {
       final String projectPath = arguments['projectPath'] as String;
       final String collection = arguments['collection'] as String;
       final String? id = arguments['id'] as String?;
-      final Map<String, dynamic> data = arguments['data'] as Map<String, dynamic>;
+      final Map<String, dynamic> data =
+          arguments['data'] as Map<String, dynamic>;
 
-      // Resolve the project's storage directory.
-      final String storagePath = ProjectResolver.resolveStoragePath(
+      // Resolve the project identity and select the appropriate storage backend.
+      final ProjectIdentity identity = ProjectResolver.readIdentity(
         projectPath,
       );
-      final EntityStore store = EntityStore(storagePath: storagePath);
 
       final DateTime now = DateTime.now().toUtc();
       final String entityId;
       final WorldModelEntity entity;
 
-      if (id != null && id.isNotEmpty) {
-        entityId = id;
-        final Map<String, dynamic>? existing = await store.load(
-          collection: collection,
-          id: entityId,
+      if (identity.storageMode == StorageMode.cloud) {
+        final FirestoreEntityStore store = ProjectResolver.createFirestoreStore(
+          identity,
         );
 
-        if (existing != null) {
-          final WorldModelEntity original = WorldModelEntity.fromJson(existing);
-          entity = WorldModelEntity(
+        if (id != null && id.isNotEmpty) {
+          entityId = id;
+          final Map<String, dynamic>? existing = await store.load(
+            collection: collection,
             id: entityId,
-            createdAt: original.createdAt,
-            updatedAt: now,
-            data: data,
           );
-          await store.update(collection: collection, entity: entity);
+
+          if (existing != null) {
+            final WorldModelEntity original = WorldModelEntity.fromJson(
+              existing,
+            );
+            entity = WorldModelEntity(
+              id: entityId,
+              createdAt: original.createdAt,
+              updatedAt: now,
+              data: data,
+            );
+            await store.update(collection: collection, entity: entity);
+          } else {
+            entity = WorldModelEntity(
+              id: entityId,
+              createdAt: now,
+              updatedAt: now,
+              data: data,
+            );
+            await store.save(collection: collection, entity: entity);
+          }
         } else {
+          final IdGenerator generator = IdGenerator();
+          entityId = generator.generateShort();
           entity = WorldModelEntity(
             id: entityId,
             createdAt: now,
@@ -83,15 +104,53 @@ McpTool rememberTool() {
           await store.save(collection: collection, entity: entity);
         }
       } else {
-        final IdGenerator generator = IdGenerator();
-        entityId = generator.generateShort();
-        entity = WorldModelEntity(
-          id: entityId,
-          createdAt: now,
-          updatedAt: now,
-          data: data,
+        final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+          identity,
+          projectPath,
         );
-        await store.save(collection: collection, entity: entity);
+        if (storagePath == null) {
+          throw StateError('Could not resolve local storage path for project.');
+        }
+        final EntityStore store = EntityStore(storagePath: storagePath);
+
+        if (id != null && id.isNotEmpty) {
+          entityId = id;
+          final Map<String, dynamic>? existing = await store.load(
+            collection: collection,
+            id: entityId,
+          );
+
+          if (existing != null) {
+            final WorldModelEntity original = WorldModelEntity.fromJson(
+              existing,
+            );
+            entity = WorldModelEntity(
+              id: entityId,
+              createdAt: original.createdAt,
+              updatedAt: now,
+              data: data,
+            );
+            await store.update(collection: collection, entity: entity);
+          } else {
+            entity = WorldModelEntity(
+              id: entityId,
+              createdAt: now,
+              updatedAt: now,
+              data: data,
+            );
+            await store.save(collection: collection, entity: entity);
+          }
+        } else {
+          final IdGenerator generator = IdGenerator();
+          entityId = generator.generateShort();
+          entity = WorldModelEntity(
+            id: entityId,
+            createdAt: now,
+            updatedAt: now,
+            data: data,
+          );
+          await store.save(collection: collection, entity: entity);
+        }
       }
 
       return <String, dynamic>{

@@ -26,11 +26,13 @@ McpTool recallTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description': 'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description':
+              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
         'id': <String, String>{
           'type': 'string',
-          'description': 'Optional identifier of a specific entity to retrieve.',
+          'description':
+              'Optional identifier of a specific entity to retrieve.',
         },
       },
       'required': <String>['projectPath', 'collection'],
@@ -40,45 +42,77 @@ McpTool recallTool() {
       final String collection = arguments['collection'] as String;
       final String? id = arguments['id'] as String?;
 
-      // Resolve the project's storage directory.
-      final String storagePath = ProjectResolver.resolveStoragePath(
+      // Resolve the project identity and select the appropriate storage backend.
+      final ProjectIdentity identity = ProjectResolver.readIdentity(
         projectPath,
       );
-      final EntityStore store = EntityStore(storagePath: storagePath);
 
-      if (id != null && id.isNotEmpty) {
-        final Map<String, dynamic>? entityJson = await store.load(
-          collection: collection,
-          id: id,
+      Map<String, dynamic>? entityJson;
+      List<Map<String, dynamic>> allJson;
+
+      if (identity.storageMode == StorageMode.cloud) {
+        final FirestoreEntityStore store = ProjectResolver.createFirestoreStore(
+          identity,
         );
 
-        if (entityJson != null) {
-          final WorldModelEntity entity = WorldModelEntity.fromJson(entityJson);
-          return <String, dynamic>{
-            'count': 1,
-            'entities': <Map<String, dynamic>>[entity.toJson()],
-          };
+        if (id != null && id.isNotEmpty) {
+          entityJson = await store.load(collection: collection, id: id);
         } else {
+          allJson = await store.listAll(collection: collection);
+          final List<WorldModelEntity> entities = allJson
+              .map(WorldModelEntity.fromJson)
+              .toList();
+          entities.sort(
+            (WorldModelEntity a, WorldModelEntity b) =>
+                b.createdAt.compareTo(a.createdAt),
+          );
           return <String, dynamic>{
-            'count': 0,
-            'entities': <Map<String, dynamic>>[],
+            'count': entities.length,
+            'entities': entities
+                .map((WorldModelEntity e) => e.toJson())
+                .toList(),
           };
         }
       } else {
-        final List<Map<String, dynamic>> allJson = await store.listAll(
-          collection: collection,
+        final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+          identity,
+          projectPath,
         );
+        if (storagePath == null) {
+          throw StateError('Could not resolve local storage path for project.');
+        }
+        final EntityStore store = EntityStore(storagePath: storagePath);
 
-        final List<WorldModelEntity> entities = allJson.map(WorldModelEntity.fromJson).toList();
+        if (id != null && id.isNotEmpty) {
+          entityJson = await store.load(collection: collection, id: id);
+        } else {
+          allJson = await store.listAll(collection: collection);
+          final List<WorldModelEntity> entities = allJson
+              .map(WorldModelEntity.fromJson)
+              .toList();
+          entities.sort(
+            (WorldModelEntity a, WorldModelEntity b) =>
+                b.createdAt.compareTo(a.createdAt),
+          );
+          return <String, dynamic>{
+            'count': entities.length,
+            'entities': entities
+                .map((WorldModelEntity e) => e.toJson())
+                .toList(),
+          };
+        }
+      }
 
-        // Sort by creation time, most recent first.
-        entities.sort(
-          (WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt),
-        );
-
+      if (entityJson != null) {
+        final WorldModelEntity entity = WorldModelEntity.fromJson(entityJson);
         return <String, dynamic>{
-          'count': entities.length,
-          'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
+          'count': 1,
+          'entities': <Map<String, dynamic>>[entity.toJson()],
+        };
+      } else {
+        return <String, dynamic>{
+          'count': 0,
+          'entities': <Map<String, dynamic>>[],
         };
       }
     },

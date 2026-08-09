@@ -6,7 +6,8 @@ import 'project_resolver.dart';
 McpTool forgetTool() {
   return McpTool(
     name: 'forget',
-    description: 'Deletes a JSON entity from a specified collection in the project world model.',
+    description:
+        'Deletes a JSON entity from a specified collection in the project world model.',
     inputSchema: <String, dynamic>{
       'type': 'object',
       'properties': <String, Map<String, String>>{
@@ -16,7 +17,8 @@ McpTool forgetTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description': 'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description':
+              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
         'id': <String, String>{
           'type': 'string',
@@ -30,13 +32,28 @@ McpTool forgetTool() {
       final String collection = arguments['collection'] as String;
       final String id = arguments['id'] as String;
 
-      // Resolve the project's storage directory.
-      final String storagePath = ProjectResolver.resolveStoragePath(
+      // Resolve the project identity and select the appropriate storage backend.
+      final ProjectIdentity identity = ProjectResolver.readIdentity(
         projectPath,
       );
-      final EntityStore store = EntityStore(storagePath: storagePath);
+      bool success;
 
-      final bool success = await store.delete(collection: collection, id: id);
+      if (identity.storageMode == StorageMode.cloud) {
+        final FirestoreEntityStore store = ProjectResolver.createFirestoreStore(
+          identity,
+        );
+        success = await store.delete(collection: collection, id: id);
+      } else {
+        final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+          identity,
+          projectPath,
+        );
+        if (storagePath == null) {
+          throw StateError('Could not resolve local storage path for project.');
+        }
+        final EntityStore store = EntityStore(storagePath: storagePath);
+        success = await store.delete(collection: collection, id: id);
+      }
 
       return <String, dynamic>{
         'status': success ? 'deleted' : 'not_found',

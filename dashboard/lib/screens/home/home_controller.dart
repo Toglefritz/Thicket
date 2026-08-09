@@ -14,8 +14,9 @@ import 'home_view.dart';
 
 /// Controller for the home screen that manages the Thicket Agent dashboard state.
 ///
-/// This controller handles loading and mutating entities in the world model database (directly via [EntityStore] on
-/// desktop, or using simulated data on the web), sending mock webhook events to the agent, and recording audit logs.
+/// This controller handles loading and mutating entities in the world model database. When the project is configured
+/// for cloud storage, all operations go through [FirestoreEntityStore]. For legacy local configurations on desktop,
+/// it falls back to the filesystem-backed [EntityStore].
 class HomeController extends State<HomeRoute> {
   /// The active view tab.
   String _activeTab = 'webhooks';
@@ -50,17 +51,19 @@ class HomeController extends State<HomeRoute> {
   /// Selected entity for details/editing view.
   WorldModelEntity? _selectedEntity;
 
-  /// Map of simulated collections for Web platforms.
-  final Map<String, List<WorldModelEntity>> _webSimulatedDb = <String, List<WorldModelEntity>>{};
-
   /// Validation status of the project path.
   bool _isProjectPathValid = false;
+
+  /// The resolved project identity, if available.
+  ProjectIdentity? _identity;
+
+  /// Firestore store instance, created when cloud mode is active.
+  FirestoreEntityStore? _firestoreStore;
 
   @override
   void initState() {
     super.initState();
-    _initializeWebSimulation();
-    _checkProjectPath();
+    _resolveProjectConfiguration();
     unawaited(_pingAgent());
     unawaited(loadWorldModel());
   }
@@ -101,6 +104,9 @@ class HomeController extends State<HomeRoute> {
   /// Getter for the project path validity status.
   bool get isProjectPathValid => _isProjectPathValid;
 
+  /// Whether the dashboard is operating in cloud storage mode.
+  bool get _isCloudMode => _firestoreStore != null;
+
   /// Sets the active tab and rebuilds the view.
   void setActiveTab(String tab) {
     setState(() {
@@ -108,12 +114,12 @@ class HomeController extends State<HomeRoute> {
     });
   }
 
-  /// Sets the project path and triggers database reload.
+  /// Sets the project path and triggers configuration resolution and database reload.
   void setProjectPath(String path) {
     setState(() {
       _projectPath = path;
     });
-    _checkProjectPath();
+    _resolveProjectConfiguration();
     unawaited(loadWorldModel());
   }
 
@@ -125,18 +131,52 @@ class HomeController extends State<HomeRoute> {
     unawaited(_pingAgent());
   }
 
+  /// Reads the project identity and configures the appropriate storage backend.
+  ///
+  /// On web, attempts to create a Firestore store from compile-time constants. On desktop, reads the project identity
+  /// file and creates either a Firestore store (cloud mode) or prepares for local filesystem access.
+  void _resolveProjectConfiguration() {
+    if (kIsWeb) {
+      _firestoreStore = ProjectResolver.createFirestoreStore();
+      _isProjectPathValid = _firestoreStore != null;
+      return;
+    }
+
+    _identity = ProjectResolver.readIdentity(_projectPath);
+
+    if (_identity == null) {
+      setState(() {
+        _isProjectPathValid = false;
+        _firestoreStore = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isProjectPathValid = true;
+    });
+
+    if (_identity!.storageMode == StorageMode.cloud) {
+      _firestoreStore = ProjectResolver.createFirestoreStore(
+        identity: _identity,
+      );
+    } else {
+      _firestoreStore = null;
+    }
+  }
+
   /// Tests the connection to the agent.
   Future<void> _pingAgent() async {
     try {
       final Uri uri = Uri.parse(_agentUrl);
-      // Send a dummy request to check if the server is up
       final http.Response response = await http
           .get(Uri.parse('${uri.scheme}://${uri.host}:${uri.port}/'))
           .timeout(
             const Duration(seconds: 2),
           );
       setState(() {
-        _isAgentOnline = response.statusCode == 200 || response.statusCode == 404;
+        _isAgentOnline =
+            response.statusCode == 200 || response.statusCode == 404;
       });
     } catch (_) {
       setState(() {
@@ -145,108 +185,76 @@ class HomeController extends State<HomeRoute> {
     }
   }
 
-  /// Checks if the project path is initialized with Thicket.
-  void _checkProjectPath() {
-    if (kIsWeb) {
-      _isProjectPathValid = true;
-      return;
-    }
-
-    try {
-      final File identityFile = File(
-        p.join(_projectPath, '.thicket', 'project.json'),
-      );
-      setState(() {
-        _isProjectPathValid = identityFile.existsSync();
-      });
-    } catch (_) {
-      setState(() {
-        _isProjectPathValid = false;
-      });
-    }
-  }
-
-  /// Populates initial simulated database values for the Web demo environment.
-  void _initializeWebSimulation() {
-    final DateTime now = DateTime.now();
-
-    _webSimulatedDb['beliefs'] = <WorldModelEntity>[
-      WorldModelEntity(
-        id: 'bel_001',
-        createdAt: now.subtract(const Duration(hours: 1)),
-        updatedAt: now.subtract(const Duration(hours: 1)),
-        data: <String, dynamic>{
-          'summary': 'GitHub commits should trigger codebase investigation',
-          'confidence': 0.95,
-          'source': 'experience_e1',
-        },
-      ),
-      WorldModelEntity(
-        id: 'bel_002',
-        createdAt: now.subtract(const Duration(hours: 2)),
-        updatedAt: now.subtract(const Duration(minutes: 30)),
-        data: <String, dynamic>{
-          'summary': 'User prefers direct deployment to Cloud Run without Docker',
-          'confidence': 1.0,
-          'source': 'webhook_slack',
-        },
-      ),
-    ];
-
-    _webSimulatedDb['concepts'] = <WorldModelEntity>[
-      WorldModelEntity(
-        id: 'con_001',
-        createdAt: now.subtract(const Duration(days: 1)),
-        updatedAt: now.subtract(const Duration(days: 1)),
-        data: <String, dynamic>{
-          'name': 'WorldModelEntity',
-          'definition': 'Flexible container for world model data',
-          'type': 'class',
-          'filePath': 'world_model/lib/src/models/core/world_model_entity.dart',
-        },
-      ),
-      WorldModelEntity(
-        id: 'con_002',
-        createdAt: now.subtract(const Duration(hours: 18)),
-        updatedAt: now.subtract(const Duration(hours: 18)),
-        data: <String, dynamic>{
-          'name': 'ProjectResolver',
-          'definition': 'Resolves persistent database paths from root settings',
-          'type': 'class',
-          'filePath': 'agent/bin/server.dart',
-        },
-      ),
-    ];
-
-    _webSimulatedDb['episodes'] = <WorldModelEntity>[
-      WorldModelEntity(
-        id: 'epi_001',
-        createdAt: now.subtract(const Duration(minutes: 15)),
-        updatedAt: now.subtract(const Duration(minutes: 15)),
-        data: <String, dynamic>{
-          'summary': 'Parsed git push webhook event',
-          'result': 'Created concept definition for new module',
-          'actions': <String>['recall', 'remember'],
-        },
-      ),
-    ];
-  }
-
   /// Refreshes the collections list and reloads the current collection.
   Future<void> loadWorldModel() async {
-    if (kIsWeb) {
-      setState(() {
-        _collections = _webSimulatedDb.keys.toList()..sort();
-        if (_selectedCollection == null || !_collections.contains(_selectedCollection)) {
-          _selectedCollection = _collections.isNotEmpty ? _collections.first : null;
-        }
-      });
-      _loadWebEntities();
+    if (_isCloudMode) {
+      await _loadCloudWorldModel();
       return;
     }
 
+    if (kIsWeb) {
+      // No Firestore config available on web; show empty state.
+      setState(() {
+        _collections = <String>[];
+        _entities = <WorldModelEntity>[];
+        _selectedEntity = null;
+      });
+      return;
+    }
+
+    await _loadLocalWorldModel();
+  }
+
+  /// Loads collections and entities from Firestore.
+  Future<void> _loadCloudWorldModel() async {
     try {
-      final String storagePath = ProjectResolver.resolveStoragePath(_projectPath);
+      final List<String> foundCollections = await _firestoreStore!
+          .listCollections();
+
+      setState(() {
+        _collections = foundCollections;
+        if (_selectedCollection == null ||
+            !_collections.contains(_selectedCollection)) {
+          _selectedCollection = _collections.isNotEmpty
+              ? _collections.first
+              : null;
+        }
+      });
+
+      if (_selectedCollection != null) {
+        await loadEntities(_selectedCollection!);
+      } else {
+        setState(() {
+          _entities = <WorldModelEntity>[];
+          _selectedEntity = null;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading cloud world model: $e');
+      setState(() {
+        _collections = <String>[];
+        _entities = <WorldModelEntity>[];
+        _selectedEntity = null;
+      });
+    }
+  }
+
+  /// Loads collections and entities from the local filesystem.
+  Future<void> _loadLocalWorldModel() async {
+    try {
+      final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+        _identity!,
+        _projectPath,
+      );
+      if (storagePath == null) {
+        setState(() {
+          _collections = <String>[];
+          _entities = <WorldModelEntity>[];
+          _selectedEntity = null;
+        });
+        return;
+      }
+
       final Directory dir = Directory(storagePath);
       if (!dir.existsSync()) {
         setState(() {
@@ -258,12 +266,20 @@ class HomeController extends State<HomeRoute> {
       }
 
       final List<String> foundCollections =
-          dir.listSync().whereType<Directory>().map((Directory d) => p.basename(d.path)).toList()..sort();
+          dir
+              .listSync()
+              .whereType<Directory>()
+              .map((Directory d) => p.basename(d.path))
+              .toList()
+            ..sort();
 
       setState(() {
         _collections = foundCollections;
-        if (_selectedCollection == null || !_collections.contains(_selectedCollection)) {
-          _selectedCollection = _collections.isNotEmpty ? _collections.first : null;
+        if (_selectedCollection == null ||
+            !_collections.contains(_selectedCollection)) {
+          _selectedCollection = _collections.isNotEmpty
+              ? _collections.first
+              : null;
         }
       });
 
@@ -290,29 +306,38 @@ class HomeController extends State<HomeRoute> {
       _selectedCollection = collection;
       _selectedEntity = null;
     });
-    if (kIsWeb) {
-      _loadWebEntities();
-    } else {
-      unawaited(loadEntities(collection));
-    }
+    unawaited(loadEntities(collection));
   }
 
-  /// Loads entities for a given collection from disk (desktop only).
+  /// Loads entities for a given collection from the active storage backend.
   Future<void> loadEntities(String collection) async {
-    if (kIsWeb) {
-      _loadWebEntities();
-      return;
-    }
-
     try {
-      final String storagePath = ProjectResolver.resolveStoragePath(_projectPath);
-      final EntityStore store = EntityStore(storagePath: storagePath);
-      final List<Map<String, dynamic>> allJson = await store.listAll(collection: collection);
-      final List<WorldModelEntity> loaded = allJson.map(WorldModelEntity.fromJson).toList();
+      List<Map<String, dynamic>> allJson;
 
-      // Sort newest first
+      if (_isCloudMode) {
+        allJson = await _firestoreStore!.listAll(collection: collection);
+      } else {
+        final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+          _identity!,
+          _projectPath,
+        );
+        if (storagePath == null) {
+          setState(() {
+            _entities = <WorldModelEntity>[];
+          });
+          return;
+        }
+        final EntityStore store = EntityStore(storagePath: storagePath);
+        allJson = await store.listAll(collection: collection);
+      }
+
+      final List<WorldModelEntity> loaded = allJson
+          .map(WorldModelEntity.fromJson)
+          .toList();
+
       loaded.sort(
-        (WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt),
+        (WorldModelEntity a, WorldModelEntity b) =>
+            b.createdAt.compareTo(a.createdAt),
       );
 
       setState(() {
@@ -320,23 +345,6 @@ class HomeController extends State<HomeRoute> {
       });
     } catch (e) {
       debugPrint('Error loading entities: $e');
-      setState(() {
-        _entities = <WorldModelEntity>[];
-      });
-    }
-  }
-
-  /// Loads simulated entities from the in-memory web database.
-  void _loadWebEntities() {
-    if (_selectedCollection != null) {
-      final List<WorldModelEntity> list = _webSimulatedDb[_selectedCollection] ?? <WorldModelEntity>[];
-      setState(() {
-        _entities = List<WorldModelEntity>.from(list)
-          ..sort(
-            (WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt),
-          );
-      });
-    } else {
       setState(() {
         _entities = <WorldModelEntity>[];
       });
@@ -351,7 +359,11 @@ class HomeController extends State<HomeRoute> {
   }
 
   /// Adds a new entity to the active collection.
-  Future<void> saveNewEntity(String collection, String id, Map<String, dynamic> data) async {
+  Future<void> saveNewEntity(
+    String collection,
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final DateTime now = DateTime.now().toUtc();
     final WorldModelEntity entity = WorldModelEntity(
       id: id,
@@ -360,20 +372,21 @@ class HomeController extends State<HomeRoute> {
       data: data,
     );
 
-    if (kIsWeb) {
-      if (!_webSimulatedDb.containsKey(collection)) {
-        _webSimulatedDb[collection] = <WorldModelEntity>[];
-      }
-      _webSimulatedDb[collection]!.add(entity);
-      _logAction('create_entity', 'Created simulated entity $id in $collection');
-      await loadWorldModel();
-      return;
-    }
-
     try {
-      final String storagePath = ProjectResolver.resolveStoragePath(_projectPath);
-      final EntityStore store = EntityStore(storagePath: storagePath);
-      await store.save(collection: collection, entity: entity);
+      if (_isCloudMode) {
+        await _firestoreStore!.save(collection: collection, entity: entity);
+      } else {
+        final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+          _identity!,
+          _projectPath,
+        );
+        if (storagePath == null) {
+          _showErrorSnackBar('Local storage path could not be resolved.');
+          return;
+        }
+        final EntityStore store = EntityStore(storagePath: storagePath);
+        await store.save(collection: collection, entity: entity);
+      }
       _logAction('create_entity', 'Created entity $id in $collection');
       await loadWorldModel();
     } catch (e) {
@@ -391,21 +404,21 @@ class HomeController extends State<HomeRoute> {
       data: entity.data,
     );
 
-    if (kIsWeb) {
-      final List<WorldModelEntity> list = _webSimulatedDb[collection] ?? <WorldModelEntity>[];
-      final int idx = list.indexWhere((WorldModelEntity e) => e.id == entity.id);
-      if (idx != -1) {
-        list[idx] = updated;
-      }
-      _logAction('update_entity', 'Updated simulated entity ${entity.id} in $collection');
-      await loadWorldModel();
-      return;
-    }
-
     try {
-      final String storagePath = ProjectResolver.resolveStoragePath(_projectPath);
-      final EntityStore store = EntityStore(storagePath: storagePath);
-      await store.update(collection: collection, entity: updated);
+      if (_isCloudMode) {
+        await _firestoreStore!.update(collection: collection, entity: updated);
+      } else {
+        final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+          _identity!,
+          _projectPath,
+        );
+        if (storagePath == null) {
+          _showErrorSnackBar('Local storage path could not be resolved.');
+          return;
+        }
+        final EntityStore store = EntityStore(storagePath: storagePath);
+        await store.update(collection: collection, entity: updated);
+      }
       _logAction('update_entity', 'Updated entity ${entity.id} in $collection');
       await loadWorldModel();
     } catch (e) {
@@ -415,24 +428,23 @@ class HomeController extends State<HomeRoute> {
 
   /// Deletes an entity.
   Future<void> deleteEntity(String collection, String id) async {
-    if (kIsWeb) {
-      if (_webSimulatedDb.containsKey(collection)) {
-        _webSimulatedDb[collection]!.removeWhere((WorldModelEntity e) => e.id == id);
-      }
-      _logAction('delete_entity', 'Deleted simulated entity $id from $collection');
-      setState(() {
-        if (_selectedEntity?.id == id) {
-          _selectedEntity = null;
-        }
-      });
-      await loadWorldModel();
-      return;
-    }
-
     try {
-      final String storagePath = ProjectResolver.resolveStoragePath(_projectPath);
-      final EntityStore store = EntityStore(storagePath: storagePath);
-      final bool deleted = await store.delete(collection: collection, id: id);
+      bool deleted;
+      if (_isCloudMode) {
+        deleted = await _firestoreStore!.delete(collection: collection, id: id);
+      } else {
+        final String? storagePath = ProjectResolver.resolveLocalStoragePath(
+          _identity!,
+          _projectPath,
+        );
+        if (storagePath == null) {
+          _showErrorSnackBar('Local storage path could not be resolved.');
+          return;
+        }
+        final EntityStore store = EntityStore(storagePath: storagePath);
+        deleted = await store.delete(collection: collection, id: id);
+      }
+
       if (deleted) {
         _logAction('delete_entity', 'Deleted entity $id from $collection');
         setState(() {
@@ -489,7 +501,8 @@ class HomeController extends State<HomeRoute> {
       });
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+        final Map<String, dynamic> data =
+            jsonDecode(response.body) as Map<String, dynamic>;
         final String summary = data['summary'] as String? ?? 'Success';
         _logAction(
           'send_webhook_success',
@@ -499,7 +512,6 @@ class HomeController extends State<HomeRoute> {
             'summary': summary,
           },
         );
-        // Refresh world model to see what the agent changed/learned!
         await loadWorldModel();
       } else {
         _logAction(
@@ -527,7 +539,11 @@ class HomeController extends State<HomeRoute> {
   }
 
   /// Appends a new action log item.
-  void _logAction(String action, String message, {Map<String, dynamic>? metadata}) {
+  void _logAction(
+    String action,
+    String message, {
+    Map<String, dynamic>? metadata,
+  }) {
     setState(() {
       _auditLogs.insert(0, <String, dynamic>{
         'timestamp': DateTime.now().toIso8601String(),

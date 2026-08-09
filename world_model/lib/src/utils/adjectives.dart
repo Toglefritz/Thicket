@@ -2,7 +2,7 @@ part of 'id_generator.dart';
 
 /// Adjectives chosen to be short, concrete, and evocative of natural or physical qualities. Avoids value judgments like
 /// 'good' or 'bad' that might feel odd as project identifiers.
-const Set<String> _adjectives = {
+const Set<String> _adjectives = <String>{
   'amber',
   'ancient',
   'azure',

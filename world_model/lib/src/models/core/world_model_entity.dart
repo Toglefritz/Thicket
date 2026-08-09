@@ -1,5 +1,3 @@
-// ignore_for_file: omit_local_variable_types
-
 /// A generic container for any entity stored in a Thicket world model.
 ///
 /// Thicket uses an entirely schema-flexible world model. Instead of static structures, every entity is stored as a
@@ -46,7 +44,7 @@ class WorldModelEntity {
   final Map<String, dynamic> data;
 
   /// Creates a JSON-serializable map merging the core fields with the dynamic payload.
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),

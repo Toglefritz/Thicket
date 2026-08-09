@@ -11,6 +11,7 @@ analyzer:
     missing_return: error
     missing_required_param: error
     record_literal_one_positional_no_trailing_comma: error
+    always_specify_types: error
 
   exclude:
     - test/.test_coverage.dart

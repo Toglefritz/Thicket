@@ -2,7 +2,7 @@ part of 'id_generator.dart';
 
 /// Nouns chosen to be short, concrete, and drawn from geography, materials, and natural objects. Avoids anything that
 /// could be confused with technical terms in software projects.
-const Set<String> _nouns = {
+const Set<String> _nouns = <String>{
   'aardvark',
   'alligator',
   'alpaca',

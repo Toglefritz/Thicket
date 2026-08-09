@@ -5,21 +5,21 @@ import 'package:thicket/thicket.dart';
 
 void main() {
   late EntityStore store;
-  const testPath = '/tmp/thicket-store-test';
+  const String testPath = '/tmp/thicket-store-test';
 
   setUp(() {
     store = EntityStore(storagePath: testPath);
   });
 
   tearDown(() {
-    final dir = Directory(testPath);
+    final Directory dir = Directory(testPath);
     if (dir.existsSync()) {
       dir.deleteSync(recursive: true);
     }
   });
 
   test('save and load an entity', () async {
-    final entity = WorldModelEntity(
+    final WorldModelEntity entity = WorldModelEntity(
       id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
@@ -31,7 +31,7 @@ void main() {
 
     await store.save(collection: 'entities', entity: entity);
 
-    final loaded = await store.load(
+    final Map<String, dynamic>? loaded = await store.load(
       collection: 'entities',
       id: 'ent-001',
     );
@@ -42,7 +42,7 @@ void main() {
   });
 
   test('listAll returns all entities in a collection', () async {
-    final first = WorldModelEntity(
+    final WorldModelEntity first = WorldModelEntity(
       id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
@@ -51,7 +51,7 @@ void main() {
       },
     );
 
-    final second = WorldModelEntity(
+    final WorldModelEntity second = WorldModelEntity(
       id: 'ent-002',
       createdAt: DateTime.utc(2025, 1, 2),
       updatedAt: DateTime.utc(2025, 1, 2),
@@ -63,7 +63,7 @@ void main() {
     await store.save(collection: 'entities', entity: first);
     await store.save(collection: 'entities', entity: second);
 
-    final all = await store.listAll(
+    final List<Map<String, dynamic>> all = await store.listAll(
       collection: 'entities',
     );
 
@@ -71,7 +71,7 @@ void main() {
   });
 
   test('save throws StateError on duplicate', () async {
-    final entity = WorldModelEntity(
+    final WorldModelEntity entity = WorldModelEntity(
       id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
@@ -89,7 +89,7 @@ void main() {
   });
 
   test('update succeeds', () async {
-    final original = WorldModelEntity(
+    final WorldModelEntity original = WorldModelEntity(
       id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
@@ -100,7 +100,7 @@ void main() {
 
     await store.save(collection: 'entities', entity: original);
 
-    final updated = WorldModelEntity(
+    final WorldModelEntity updated = WorldModelEntity(
       id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025, 1, 2),
@@ -114,7 +114,7 @@ void main() {
       entity: updated,
     );
 
-    final loaded = await store.load(
+    final Map<String, dynamic>? loaded = await store.load(
       collection: 'entities',
       id: 'ent-001',
     );
@@ -123,7 +123,7 @@ void main() {
   });
 
   test('delete removes entity and returns true', () async {
-    final entity = WorldModelEntity(
+    final WorldModelEntity entity = WorldModelEntity(
       id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
@@ -134,13 +134,13 @@ void main() {
 
     await store.save(collection: 'entities', entity: entity);
 
-    final result = await store.delete(
+    final bool result = await store.delete(
       collection: 'entities',
       id: 'ent-001',
     );
     expect(result, isTrue);
 
-    final loaded = await store.load(
+    final Map<String, dynamic>? loaded = await store.load(
       collection: 'entities',
       id: 'ent-001',
     );
@@ -148,7 +148,7 @@ void main() {
   });
 
   test('delete returns false for nonexistent entity', () async {
-    final result = await store.delete(
+    final bool result = await store.delete(
       collection: 'entities',
       id: 'nonexistent',
     );
@@ -156,7 +156,7 @@ void main() {
   });
 
   test('load returns null for nonexistent entity', () async {
-    final loaded = await store.load(
+    final Map<String, dynamic>? loaded = await store.load(
       collection: 'entities',
       id: 'nonexistent',
     );

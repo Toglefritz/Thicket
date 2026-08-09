@@ -15,43 +15,73 @@ import 'package:shelf/shelf_io.dart' as io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:thicket/thicket.dart';
 
-/// Resolves a project's centralized storage path from its root directory.
+/// Resolves project configuration and constructs the appropriate entity store.
 ///
-/// Reads the `.thicket/project.json` identity file to determine the project ID, then constructs the path to the storage
-/// directory.
-class ProjectResolver {
+/// Reads the `.thicket/project.json` identity file to determine the storage mode. For cloud mode, returns a
+/// [FirestoreEntityStore] backed by the project's configured GCP Firestore instance. For local modes, returns a
+/// filesystem-backed [EntityStore].
+class StoreResolver {
   /// Safely resolves the user's home directory across different operating systems.
-  ///
-  /// On Windows, checks `USERPROFILE` and `APPDATA`. On macOS/Linux, checks `HOME`. Returns an empty string if home
-  /// cannot be resolved.
   static String getHomeDirectory() {
     if (Platform.isWindows) {
-      return Platform.environment['USERPROFILE'] ?? Platform.environment['APPDATA'] ?? '';
+      return Platform.environment['USERPROFILE'] ??
+          Platform.environment['APPDATA'] ??
+          '';
     }
     return Platform.environment['HOME'] ?? '';
   }
 
-  /// Resolves the storage path for the given project directory.
+  /// Reads and parses the project identity file from the given project path.
   ///
-  /// Throws [StateError] if the project has not been initialized (no `.thicket/project.json` found) or if the home
-  /// environment variable is missing in centralized mode.
-  static String resolveStoragePath(String projectPath) {
+  /// Throws [StateError] if the identity file is missing.
+  static ProjectIdentity readIdentity(String projectPath) {
     final File identityFile = File(
       p.join(projectPath, '.thicket', 'project.json'),
     );
 
     if (!identityFile.existsSync()) {
       throw StateError(
-        'Project has not been initialized with Thicket. Run initialize_project first. No .thicket/project.json found at: $projectPath',
+        'Project has not been initialized with Thicket. No .thicket/project.json found at: $projectPath',
       );
     }
 
-    final Map<String, dynamic> identity = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
-    final String projectId = identity['projectId'] as String;
-    final String storageMode = identity['storageMode'] as String? ?? 'centralized';
+    final Map<String, dynamic> json =
+        jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+    return ProjectIdentity.fromJson(json);
+  }
 
-    if (storageMode == 'inRepo') {
-      return p.join(projectPath, '.thicket', 'world_model');
+  /// Creates a [FirestoreEntityStore] for projects using cloud storage.
+  ///
+  /// Requires the `GCP_PROJECT_ID` environment variable (or the value from project.json) and either a
+  /// `GOOGLE_ACCESS_TOKEN` or `FIREBASE_API_KEY` environment variable for authentication.
+  static FirestoreEntityStore createFirestoreStore(ProjectIdentity identity) {
+    final String? gcpProjectId =
+        identity.gcpProjectId ?? Platform.environment['GCP_PROJECT_ID'];
+
+    if (gcpProjectId == null || gcpProjectId.isEmpty) {
+      throw StateError(
+        'Cloud storage mode requires a GCP project ID. Set gcpProjectId in .thicket/project.json or the '
+        'GCP_PROJECT_ID environment variable.',
+      );
+    }
+
+    final String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
+    final String? apiKey = Platform.environment['FIREBASE_API_KEY'];
+
+    return FirestoreEntityStore(
+      gcpProjectId: gcpProjectId,
+      thicketProjectId: identity.projectId,
+      accessToken: accessToken,
+      apiKey: apiKey,
+    );
+  }
+
+  /// Creates a local [EntityStore] for projects using centralized or in-repo storage.
+  static EntityStore createLocalStore(
+      ProjectIdentity identity, String projectPath) {
+    if (identity.storageMode == StorageMode.inRepo) {
+      return EntityStore(
+          storagePath: p.join(projectPath, '.thicket', 'world_model'));
     }
 
     final String home = getHomeDirectory();
@@ -59,7 +89,8 @@ class ProjectResolver {
       throw StateError('Home directory environment variable is not set');
     }
 
-    return p.join(home, '.thicket', 'projects', projectId);
+    return EntityStore(
+        storagePath: p.join(home, '.thicket', 'projects', identity.projectId));
   }
 }
 
@@ -72,11 +103,17 @@ final FunctionDeclaration rememberDeclaration = FunctionDeclaration(
   Schema(
     SchemaType.object,
     properties: <String, Schema>{
-      'projectPath': Schema(SchemaType.string, description: 'Absolute path to the project root.'),
-      'collection':
-          Schema(SchemaType.string, description: 'The target collection name (e.g., "experiences", "beliefs").'),
-      'id': Schema(SchemaType.string, description: 'Optional unique identifier. If omitted, a new one is generated.'),
-      'data': Schema(SchemaType.object, description: 'The flexible JSON payload containing the entity properties.'),
+      'projectPath': Schema(SchemaType.string,
+          description: 'Absolute path to the project root.'),
+      'collection': Schema(SchemaType.string,
+          description:
+              'The target collection name (e.g., "experiences", "beliefs").'),
+      'id': Schema(SchemaType.string,
+          description:
+              'Optional unique identifier. If omitted, a new one is generated.'),
+      'data': Schema(SchemaType.object,
+          description:
+              'The flexible JSON payload containing the entity properties.'),
     },
     requiredProperties: <String>['projectPath', 'collection', 'data'],
   ),
@@ -91,9 +128,12 @@ final FunctionDeclaration recallDeclaration = FunctionDeclaration(
   Schema(
     SchemaType.object,
     properties: <String, Schema>{
-      'projectPath': Schema(SchemaType.string, description: 'Absolute path to the project root.'),
-      'collection': Schema(SchemaType.string, description: 'The target collection name.'),
-      'id': Schema(SchemaType.string, description: 'Optional identifier of a specific entity to retrieve.'),
+      'projectPath': Schema(SchemaType.string,
+          description: 'Absolute path to the project root.'),
+      'collection':
+          Schema(SchemaType.string, description: 'The target collection name.'),
+      'id': Schema(SchemaType.string,
+          description: 'Optional identifier of a specific entity to retrieve.'),
     },
     requiredProperties: <String>['projectPath', 'collection'],
   ),
@@ -108,9 +148,12 @@ final FunctionDeclaration forgetDeclaration = FunctionDeclaration(
   Schema(
     SchemaType.object,
     properties: <String, Schema>{
-      'projectPath': Schema(SchemaType.string, description: 'Absolute path to the project root.'),
-      'collection': Schema(SchemaType.string, description: 'The target collection name.'),
-      'id': Schema(SchemaType.string, description: 'The unique identifier of the entity to delete.'),
+      'projectPath': Schema(SchemaType.string,
+          description: 'Absolute path to the project root.'),
+      'collection':
+          Schema(SchemaType.string, description: 'The target collection name.'),
+      'id': Schema(SchemaType.string,
+          description: 'The unique identifier of the entity to delete.'),
     },
     requiredProperties: <String>['projectPath', 'collection', 'id'],
   ),
@@ -125,8 +168,10 @@ final FunctionDeclaration investigateDeclaration = FunctionDeclaration(
   Schema(
     SchemaType.object,
     properties: <String, Schema>{
-      'projectPath': Schema(SchemaType.string, description: 'Absolute path to the project root.'),
-      'relativePath': Schema(SchemaType.string, description: 'Relative path of the file to inspect.'),
+      'projectPath': Schema(SchemaType.string,
+          description: 'Absolute path to the project root.'),
+      'relativePath': Schema(SchemaType.string,
+          description: 'Relative path of the file to inspect.'),
     },
     requiredProperties: <String>['projectPath', 'relativePath'],
   ),
@@ -134,54 +179,76 @@ final FunctionDeclaration investigateDeclaration = FunctionDeclaration(
 
 /// Handles executing the `remember` tool called by Gemini.
 ///
-/// Saves or updates the entity in the target project's collection store.
+/// Saves or updates the entity in the target project's world model store. Resolves the appropriate storage backend
+/// (Firestore or local) based on the project's configuration.
 Future<Map<String, dynamic>> handleRemember(Map<String, dynamic> args) async {
   final String projectPath = args['projectPath'] as String;
   final String collection = args['collection'] as String;
   final String? id = args['id'] as String?;
   final Map<String, dynamic> data = args['data'] as Map<String, dynamic>;
 
-  final String storagePath = ProjectResolver.resolveStoragePath(projectPath);
-  final EntityStore store = EntityStore(storagePath: storagePath);
+  final ProjectIdentity identity = StoreResolver.readIdentity(projectPath);
 
   final DateTime now = DateTime.now().toUtc();
   final String entityId;
   final WorldModelEntity entity;
 
-  if (id != null && id.isNotEmpty) {
-    entityId = id;
-    final Map<String, dynamic>? existing = await store.load(
-      collection: collection,
-      id: entityId,
-    );
-    if (existing != null) {
-      final WorldModelEntity original = WorldModelEntity.fromJson(existing);
-      entity = WorldModelEntity(
-        id: entityId,
-        createdAt: original.createdAt,
-        updatedAt: now,
-        data: data,
-      );
-      await store.update(collection: collection, entity: entity);
+  if (identity.storageMode == StorageMode.cloud) {
+    final FirestoreEntityStore store =
+        StoreResolver.createFirestoreStore(identity);
+
+    if (id != null && id.isNotEmpty) {
+      entityId = id;
+      final Map<String, dynamic>? existing =
+          await store.load(collection: collection, id: entityId);
+      if (existing != null) {
+        final WorldModelEntity original = WorldModelEntity.fromJson(existing);
+        entity = WorldModelEntity(
+            id: entityId,
+            createdAt: original.createdAt,
+            updatedAt: now,
+            data: data);
+        await store.update(collection: collection, entity: entity);
+      } else {
+        entity = WorldModelEntity(
+            id: entityId, createdAt: now, updatedAt: now, data: data);
+        await store.save(collection: collection, entity: entity);
+      }
     } else {
+      final IdGenerator generator = IdGenerator();
+      entityId = generator.generateShort();
       entity = WorldModelEntity(
-        id: entityId,
-        createdAt: now,
-        updatedAt: now,
-        data: data,
-      );
+          id: entityId, createdAt: now, updatedAt: now, data: data);
       await store.save(collection: collection, entity: entity);
     }
   } else {
-    final IdGenerator generator = IdGenerator();
-    entityId = generator.generateShort();
-    entity = WorldModelEntity(
-      id: entityId,
-      createdAt: now,
-      updatedAt: now,
-      data: data,
-    );
-    await store.save(collection: collection, entity: entity);
+    final EntityStore store =
+        StoreResolver.createLocalStore(identity, projectPath);
+
+    if (id != null && id.isNotEmpty) {
+      entityId = id;
+      final Map<String, dynamic>? existing =
+          await store.load(collection: collection, id: entityId);
+      if (existing != null) {
+        final WorldModelEntity original = WorldModelEntity.fromJson(existing);
+        entity = WorldModelEntity(
+            id: entityId,
+            createdAt: original.createdAt,
+            updatedAt: now,
+            data: data);
+        await store.update(collection: collection, entity: entity);
+      } else {
+        entity = WorldModelEntity(
+            id: entityId, createdAt: now, updatedAt: now, data: data);
+        await store.save(collection: collection, entity: entity);
+      }
+    } else {
+      final IdGenerator generator = IdGenerator();
+      entityId = generator.generateShort();
+      entity = WorldModelEntity(
+          id: entityId, createdAt: now, updatedAt: now, data: data);
+      await store.save(collection: collection, entity: entity);
+    }
   }
 
   return <String, dynamic>{
@@ -193,61 +260,92 @@ Future<Map<String, dynamic>> handleRemember(Map<String, dynamic> args) async {
 
 /// Handles executing the `recall` tool called by Gemini.
 ///
-/// Retrieves a single entity by ID or lists all entities in the collection.
+/// Retrieves a single entity by ID or lists all entities in the collection. Uses the project's configured storage
+/// backend.
 Future<Map<String, dynamic>> handleRecall(Map<String, dynamic> args) async {
   final String projectPath = args['projectPath'] as String;
   final String collection = args['collection'] as String;
   final String? id = args['id'] as String?;
 
-  final String storagePath = ProjectResolver.resolveStoragePath(projectPath);
-  final EntityStore store = EntityStore(storagePath: storagePath);
+  final ProjectIdentity identity = StoreResolver.readIdentity(projectPath);
 
-  if (id != null && id.isNotEmpty) {
-    final Map<String, dynamic>? entityJson = await store.load(
-      collection: collection,
-      id: id,
-    );
-    if (entityJson != null) {
-      final WorldModelEntity entity = WorldModelEntity.fromJson(entityJson);
-      return <String, dynamic>{
-        'count': 1,
-        'entities': <Map<String, dynamic>>[entity.toJson()],
-      };
+  Map<String, dynamic>? entityJson;
+  List<Map<String, dynamic>> allJson;
+
+  if (identity.storageMode == StorageMode.cloud) {
+    final FirestoreEntityStore store =
+        StoreResolver.createFirestoreStore(identity);
+
+    if (id != null && id.isNotEmpty) {
+      entityJson = await store.load(collection: collection, id: id);
     } else {
+      allJson = await store.listAll(collection: collection);
+      final List<WorldModelEntity> entities =
+          allJson.map(WorldModelEntity.fromJson).toList();
+      entities.sort(
+        (WorldModelEntity a, WorldModelEntity b) =>
+            b.createdAt.compareTo(a.createdAt),
+      );
       return <String, dynamic>{
-        'count': 0,
-        'entities': <Map<String, dynamic>>[],
+        'count': entities.length,
+        'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
       };
     }
   } else {
-    final List<Map<String, dynamic>> allJson = await store.listAll(
-      collection: collection,
-    );
-    final List<WorldModelEntity> entities = allJson.map(WorldModelEntity.fromJson).toList();
+    final EntityStore store =
+        StoreResolver.createLocalStore(identity, projectPath);
 
-    entities.sort(
-      (WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt),
-    );
+    if (id != null && id.isNotEmpty) {
+      entityJson = await store.load(collection: collection, id: id);
+    } else {
+      allJson = await store.listAll(collection: collection);
+      final List<WorldModelEntity> entities =
+          allJson.map(WorldModelEntity.fromJson).toList();
+      entities.sort(
+        (WorldModelEntity a, WorldModelEntity b) =>
+            b.createdAt.compareTo(a.createdAt),
+      );
+      return <String, dynamic>{
+        'count': entities.length,
+        'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
+      };
+    }
+  }
 
+  if (entityJson != null) {
+    final WorldModelEntity entity = WorldModelEntity.fromJson(entityJson);
     return <String, dynamic>{
-      'count': entities.length,
-      'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
+      'count': 1,
+      'entities': <Map<String, dynamic>>[entity.toJson()],
+    };
+  } else {
+    return <String, dynamic>{
+      'count': 0,
+      'entities': <Map<String, dynamic>>[],
     };
   }
 }
 
 /// Handles executing the `forget` tool called by Gemini.
 ///
-/// Deletes the entity by ID from the specified collection.
+/// Deletes the entity by ID from the specified collection using the project's configured storage backend.
 Future<Map<String, dynamic>> handleForget(Map<String, dynamic> args) async {
   final String projectPath = args['projectPath'] as String;
   final String collection = args['collection'] as String;
   final String id = args['id'] as String;
 
-  final String storagePath = ProjectResolver.resolveStoragePath(projectPath);
-  final EntityStore store = EntityStore(storagePath: storagePath);
+  final ProjectIdentity identity = StoreResolver.readIdentity(projectPath);
+  bool success;
 
-  final bool success = await store.delete(collection: collection, id: id);
+  if (identity.storageMode == StorageMode.cloud) {
+    final FirestoreEntityStore store =
+        StoreResolver.createFirestoreStore(identity);
+    success = await store.delete(collection: collection, id: id);
+  } else {
+    final EntityStore store =
+        StoreResolver.createLocalStore(identity, projectPath);
+    success = await store.delete(collection: collection, id: id);
+  }
 
   return <String, dynamic>{
     'status': success ? 'deleted' : 'not_found',
@@ -258,7 +356,8 @@ Future<Map<String, dynamic>> handleForget(Map<String, dynamic> args) async {
 /// Handles executing the `investigateCodebase` tool called by Gemini.
 ///
 /// Reads and returns the raw file content from the project path.
-Future<Map<String, dynamic>> handleInvestigate(Map<String, dynamic> args) async {
+Future<Map<String, dynamic>> handleInvestigate(
+    Map<String, dynamic> args) async {
   final String projectPath = args['projectPath'] as String;
   final String relativePath = args['relativePath'] as String;
 
@@ -291,7 +390,8 @@ Future<String> processEvent({
   final GenerativeModel model = GenerativeModel(
     model: 'gemini-1.5-pro-latest',
     apiKey: apiKey,
-    systemInstruction: Content.system('You are Thicket Agent, an autonomous codebase learning assistant. '
+    systemInstruction: Content.system(
+        'You are Thicket Agent, an autonomous codebase learning assistant. '
         'Your goal is to build, maintain, and query a persistent world model '
         'of the codebase/project you are working in.\n\n'
         'You receive normalized events from development tools (GitHub, GitLab, '
@@ -326,7 +426,8 @@ Future<String> processEvent({
       'using the remember/forget tools.\n'
       '5. Provide a concise summary of what you learned or updated in the world model.';
 
-  GenerateContentResponse response = await chat.sendMessage(Content.text(prompt));
+  GenerateContentResponse response =
+      await chat.sendMessage(Content.text(prompt));
 
   while (response.functionCalls.isNotEmpty) {
     final List<FunctionResponse> responses = <FunctionResponse>[];
@@ -366,20 +467,25 @@ void main(List<String> args) async {
   final Router router = Router()
     ..post('/events', (Request request) async {
       final String payloadString = await request.readAsString();
-      final Map<String, dynamic> body = jsonDecode(payloadString) as Map<String, dynamic>;
+      final Map<String, dynamic> body =
+          jsonDecode(payloadString) as Map<String, dynamic>;
 
       final String? source = body['source'] as String?;
       final String? eventType = body['eventType'] as String?;
       final String? projectPath = body['projectPath'] as String?;
-      final Map<String, dynamic> payload = body['payload'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final Map<String, dynamic> payload =
+          body['payload'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
       if (source == null || eventType == null || projectPath == null) {
-        return Response.badRequest(body: 'Missing required parameters: source, eventType, projectPath');
+        return Response.badRequest(
+            body:
+                'Missing required parameters: source, eventType, projectPath');
       }
 
       final String apiKey = Platform.environment['GEMINI_API_KEY'] ?? '';
       if (apiKey.isEmpty) {
-        return Response.internalServerError(body: 'GEMINI_API_KEY environment variable is not set');
+        return Response.internalServerError(
+            body: 'GEMINI_API_KEY environment variable is not set');
       }
 
       try {
@@ -392,7 +498,8 @@ void main(List<String> args) async {
         );
 
         return Response.ok(
-          jsonEncode(<String, dynamic>{'status': 'success', 'summary': summary}),
+          jsonEncode(
+              <String, dynamic>{'status': 'success', 'summary': summary}),
           headers: <String, String>{'content-type': 'application/json'},
         );
       } catch (e) {
@@ -404,6 +511,7 @@ void main(List<String> args) async {
   final String portStr = Platform.environment['PORT'] ?? '8080';
   final int port = int.tryParse(portStr) ?? 8080;
 
-  final HttpServer server = await io.serve(router.call, InternetAddress.anyIPv4, port);
+  final HttpServer server =
+      await io.serve(router.call, InternetAddress.anyIPv4, port);
   print('Thicket Agent listening on port ${server.port}');
 }

@@ -1,8 +1,9 @@
+import 'storage_mode.dart';
+
 /// Represents the identity link between a coding project and its persistent world model.
 ///
 /// This corresponds to the `.thicket/project.json` file placed in a project's root directory. It contains a stable
-/// identifier that points to the world model stored at a centralized location (e.g.
-/// `~/.thicket/projects/<projectId>/`).
+/// identifier that points to the world model, whether stored locally or in Google Cloud Firestore.
 ///
 /// The identifier remains the same even if the project is moved or renamed, allowing the world model to survive
 /// directory relocations.
@@ -12,7 +13,8 @@ class ProjectIdentity {
     required this.projectId,
     required this.projectName,
     required this.createdAt,
-    this.storageMode = 'centralized',
+    this.storageMode = StorageMode.cloud,
+    this.gcpProjectId,
   });
 
   /// Deserializes a project identity from the contents of a `.thicket/project.json` file.
@@ -21,14 +23,16 @@ class ProjectIdentity {
       projectId: json['projectId'] as String,
       projectName: json['projectName'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      storageMode: json['storageMode'] as String? ?? 'centralized',
+      storageMode: StorageMode.fromString(json['storageMode'] as String?),
+      gcpProjectId: json['gcpProjectId'] as String?,
     );
   }
 
   /// A stable unique identifier for this project's world model.
   ///
-  /// Generated once when Thicket is first initialized for a project. Used as the directory name under
-  /// `~/.thicket/projects/` to locate the world model data.
+  /// Generated once when Thicket is first initialized for a project. In cloud mode, this is used as the scoping key
+  /// within Firestore (e.g. `thicket_projects/{projectId}/`). In local modes, it determines the directory name under
+  /// `~/.thicket/projects/`.
   final String projectId;
 
   /// A human-readable name for the project.
@@ -40,15 +44,27 @@ class ProjectIdentity {
   final DateTime createdAt;
 
   /// The storage topology used for this project's world model.
+  final StorageMode storageMode;
+
+  /// The Google Cloud project ID that owns the Firestore database.
   ///
-  /// Can be 'centralized' (default) or 'inRepo'.
-  final String storageMode;
+  /// Required when [storageMode] is [StorageMode.cloud]. This identifies which GCP project's Firestore instance holds
+  /// the world model data. Ignored for local storage modes.
+  final String? gcpProjectId;
 
   /// Serializes this identity to JSON for writing to `.thicket/project.json`.
-  Map<String, dynamic> toJson() => {
-    'projectId': projectId,
-    'projectName': projectName,
-    'createdAt': createdAt.toUtc().toIso8601String(),
-    'storageMode': storageMode,
-  };
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> json = <String, dynamic>{
+      'projectId': projectId,
+      'projectName': projectName,
+      'createdAt': createdAt.toUtc().toIso8601String(),
+      'storageMode': storageMode.toJson(),
+    };
+
+    if (gcpProjectId != null) {
+      json['gcpProjectId'] = gcpProjectId;
+    }
+
+    return json;
+  }
 }

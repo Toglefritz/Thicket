@@ -3,4 +3,5 @@ library;
 
 export 'src/models/models.dart';
 export 'src/storage/entity_store.dart';
+export 'src/storage/firestore_entity_store.dart';
 export 'src/utils/id_generator.dart';
