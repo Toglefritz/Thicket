@@ -17,9 +17,8 @@ import 'package:thicket/thicket.dart';
 
 /// Resolves project configuration and constructs the appropriate entity store.
 ///
-/// Reads the `.thicket/project.json` identity file to determine the storage mode. For cloud mode, returns a
-/// [FirestoreEntityStore] backed by the project's configured GCP Firestore instance. For local modes, returns a
-/// filesystem-backed [EntityStore].
+/// First attempts to resolve identity from environment variables (for cloud deployments where no filesystem config is
+/// available). Falls back to reading `.thicket/project.json` from the provided project path for local development.
 class StoreResolver {
   /// Safely resolves the user's home directory across different operating systems.
   static String getHomeDirectory() {
@@ -31,17 +30,31 @@ class StoreResolver {
     return Platform.environment['HOME'] ?? '';
   }
 
-  /// Reads and parses the project identity file from the given project path.
+  /// Resolves the project identity, preferring environment variables over local files.
   ///
-  /// Throws [StateError] if the identity file is missing.
+  /// On cloud deployments (Cloud Run, GCE), the identity is constructed entirely from environment variables
+  /// (`THICKET_PROJECT_ID`, `GCP_PROJECT_ID`, etc.) without touching the filesystem. For local development, falls back
+  /// to reading the `.thicket/project.json` file at [projectPath].
+  ///
+  /// Throws [StateError] if neither environment variables nor a local identity file can provide the identity.
   static ProjectIdentity readIdentity(String projectPath) {
+    // Try environment variables first (works on Cloud Run without any local files).
+    final ProjectIdentity? envIdentity = IdentityResolver.fromEnvironment(
+      Platform.environment,
+    );
+    if (envIdentity != null) {
+      return envIdentity;
+    }
+
+    // Fall back to reading the local identity file.
     final File identityFile = File(
       p.join(projectPath, '.thicket', 'project.json'),
     );
 
     if (!identityFile.existsSync()) {
       throw StateError(
-        'Project has not been initialized with Thicket. No .thicket/project.json found at: $projectPath',
+        'Project identity could not be resolved. Set THICKET_PROJECT_ID and GCP_PROJECT_ID environment variables, '
+        'or ensure .thicket/project.json exists at: $projectPath',
       );
     }
 

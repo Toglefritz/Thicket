@@ -18,18 +18,31 @@ class ProjectResolver {
     return Platform.environment['HOME'] ?? '';
   }
 
-  /// Reads and parses the project identity file from the given project path.
+  /// Resolves the project identity, preferring environment variables over local files.
   ///
-  /// Throws [StateError] if the project has not been initialized (no `.thicket/project.json` found).
+  /// On cloud deployments, the identity is constructed from environment variables (`THICKET_PROJECT_ID`,
+  /// `GCP_PROJECT_ID`, etc.) without reading the filesystem. For local development, falls back to reading
+  /// `.thicket/project.json` at [projectPath].
+  ///
+  /// Throws [StateError] if neither environment variables nor a local identity file can provide the identity.
   static ProjectIdentity readIdentity(String projectPath) {
+    // Try environment variables first (works on cloud without any local files).
+    final ProjectIdentity? envIdentity = IdentityResolver.fromEnvironment(
+      Platform.environment,
+    );
+    if (envIdentity != null) {
+      return envIdentity;
+    }
+
+    // Fall back to reading the local identity file.
     final File identityFile = File(
       p.join(projectPath, '.thicket', 'project.json'),
     );
 
     if (!identityFile.existsSync()) {
       throw StateError(
-        'Project has not been initialized with Thicket. Run initialize_project first. No .thicket/project.json found '
-        'at: $projectPath',
+        'Project identity could not be resolved. Set THICKET_PROJECT_ID and GCP_PROJECT_ID environment variables, '
+        'or ensure .thicket/project.json exists at: $projectPath',
       );
     }
 

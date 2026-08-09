@@ -50,14 +50,38 @@ class ProjectResolver {
     return Platform.environment['HOME'] ?? '';
   }
 
-  /// Reads and parses the project identity file from the given path.
+  /// Resolves the project identity, preferring compile-time constants and environment variables over local files.
   ///
-  /// Returns null on web or if the identity file does not exist.
+  /// On web, constructs identity from the `--dart-define` constants. On desktop, first tries the compile-time
+  /// constants, then falls back to reading the local `.thicket/project.json` file.
+  ///
+  /// Returns null if identity cannot be resolved from any source.
   static ProjectIdentity? readIdentity(String projectPath) {
+    // Try compile-time constants first (works on both web and desktop).
+    if (_defaultThicketProjectId.isNotEmpty &&
+        _defaultGcpProjectId.isNotEmpty) {
+      return ProjectIdentity(
+        projectId: _defaultThicketProjectId,
+        projectName: _defaultThicketProjectId,
+        createdAt: DateTime.utc(1970),
+        storageMode: StorageMode.cloud,
+        gcpProjectId: _defaultGcpProjectId,
+      );
+    }
+
     if (kIsWeb) {
       return null;
     }
 
+    // On desktop, try platform environment variables via IdentityResolver.
+    final ProjectIdentity? envIdentity = IdentityResolver.fromEnvironment(
+      Platform.environment,
+    );
+    if (envIdentity != null) {
+      return envIdentity;
+    }
+
+    // Final fallback: read the local identity file.
     final File identityFile = File(
       p.join(projectPath, '.thicket', 'project.json'),
     );
