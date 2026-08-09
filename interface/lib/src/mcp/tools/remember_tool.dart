@@ -2,96 +2,106 @@ import 'package:thicket/thicket.dart';
 import '../mcp_tool.dart';
 import 'project_resolver.dart';
 
-/// Creates the `remember` tool which records a significant experience as an episode in the project's world model.
-///
-/// This is the primary write path for the experience layer. When an agent encounters something worth preserving (a
-/// discovered constraint, a failed approach, a debugging outcome), it calls this tool to persist that knowledge for
-/// future sessions.
+/// Creates the `remember` tool which saves or updates a JSON entity in a specified collection in the project's world
+/// model.
 ///
 /// Required arguments:
 /// - `projectPath`: absolute path to the project root
-/// - `kind`: one of the [EpisodeKind] enum values
-/// - `summary`: concise description of the experience
-/// - `content`: full description with context and reasoning
+/// - `collection`: target collection name
+/// - `data`: JSON object containing the entity properties
 ///
 /// Optional arguments:
-/// - `relatedPaths`: list of file paths relevant to this experience
-/// - `tags`: list of free-form tags for categorization
+/// - `id`: unique identifier. If provided, updates existing entity or creates it. If omitted, generates a new ID.
 McpTool rememberTool() {
   return McpTool(
     name: 'remember',
     description:
-        'Records a significant experience as an episode in the project world model. Use this when you discover '
-        'something worth preserving for future sessions: architectural constraints, failed approaches, debugging '
-        'outcomes, unexpected interactions, or important task results.',
-    inputSchema: {
+        'Saves or updates a JSON entity in a specified collection in the project world model. '
+        'If an ID is provided, updates the existing entity or creates it if absent. '
+        'If no ID is provided, generates a new unique ID and saves the entity.',
+    inputSchema: <String, dynamic>{
       'type': 'object',
-      'properties': {
-        'projectPath': {
+      'properties': <String, Map<String, String>>{
+        'projectPath': <String, String>{
           'type': 'string',
           'description': 'Absolute path to the root directory of the project.',
         },
-        'kind': {
-          'type': 'string',
-          'description': 'The category of experience being recorded.',
-          'enum': [
-            'taskPerformed',
-            'constraintDiscovered',
-            'approachFailed',
-            'implementationRejected',
-            'unexpectedInteraction',
-            'debuggingOutcome',
-            'observation',
-          ],
-        },
-        'summary': {
+        'collection': <String, String>{
           'type': 'string',
           'description':
-              'A concise summary of the experience. Should be brief enough to be useful in retrieval results without '
-              'reading the full content.',
+              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
-        'content': {
+        'id': <String, String>{
           'type': 'string',
-          'description': 'The full description of the experience, including relevant context, reasoning, and outcome.',
+          'description':
+              'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
+        },
+        'data': <String, String>{
+          'type': 'object',
+          'description':
+              'The flexible JSON payload containing the entity properties.',
         },
       },
-      'required': ['projectPath', 'kind', 'summary', 'content'],
+      'required': <String>['projectPath', 'collection', 'data'],
     },
-    handler: (arguments) async {
-      final projectPath = arguments['projectPath'] as String;
-      final kindStr = arguments['kind'] as String;
-      final summary = arguments['summary'] as String;
-      final content = arguments['content'] as String;
+    handler: (Map<String, dynamic> arguments) async {
+      final String projectPath = arguments['projectPath'] as String;
+      final String collection = arguments['collection'] as String;
+      final String? id = arguments['id'] as String?;
+      final Map<String, dynamic> data =
+          arguments['data'] as Map<String, dynamic>;
 
       // Resolve the project's storage directory.
-      final storagePath = ProjectResolver.resolveStoragePath(projectPath);
-
-      // Generate a unique ID for this episode.
-      final generator = IdGenerator();
-      final episodeId = generator.generateShort();
-
-      // Parse the episode kind.
-      final kind = EpisodeKind.values.byName(kindStr);
-
-      // Create the episode entity.
-      final now = DateTime.now().toUtc();
-      final episode = Episode(
-        id: episodeId,
-        createdAt: now,
-        updatedAt: now,
-        kind: kind,
-        summary: summary,
-        content: content,
+      final String storagePath = ProjectResolver.resolveStoragePath(
+        projectPath,
       );
+      final EntityStore store = EntityStore(storagePath: storagePath);
 
-      // Persist to the store.
-      final store = EntityStore(storagePath: storagePath);
-      await store.save(collection: 'episodes', entity: episode);
+      final DateTime now = DateTime.now().toUtc();
+      final String entityId;
+      final WorldModelEntity entity;
 
-      return {
-        'status': 'recorded',
-        'episodeId': episodeId,
-        'episode': episode.toJson(),
+      if (id != null && id.isNotEmpty) {
+        entityId = id;
+        final Map<String, dynamic>? existing = await store.load(
+          collection: collection,
+          id: entityId,
+        );
+
+        if (existing != null) {
+          final WorldModelEntity original = WorldModelEntity.fromJson(existing);
+          entity = WorldModelEntity(
+            id: entityId,
+            createdAt: original.createdAt,
+            updatedAt: now,
+            data: data,
+          );
+          await store.update(collection: collection, entity: entity);
+        } else {
+          entity = WorldModelEntity(
+            id: entityId,
+            createdAt: now,
+            updatedAt: now,
+            data: data,
+          );
+          await store.save(collection: collection, entity: entity);
+        }
+      } else {
+        final IdGenerator generator = IdGenerator();
+        entityId = generator.generateShort();
+        entity = WorldModelEntity(
+          id: entityId,
+          createdAt: now,
+          updatedAt: now,
+          data: data,
+        );
+        await store.save(collection: collection, entity: entity);
+      }
+
+      return <String, dynamic>{
+        'status': 'saved',
+        'id': entityId,
+        'entity': entity.toJson(),
       };
     },
   );

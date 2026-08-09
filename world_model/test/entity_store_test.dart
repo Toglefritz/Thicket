@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:thicket/src/models/experience/episode.dart';
-import 'package:thicket/src/storage/entity_store.dart';
+import 'package:thicket/thicket.dart';
 
 void main() {
   late EntityStore store;
@@ -19,21 +18,22 @@ void main() {
     }
   });
 
-  test('save and load an episode', () async {
-    final episode = Episode(
-      id: 'ep-001',
+  test('save and load an entity', () async {
+    final entity = WorldModelEntity(
+      id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
-      kind: EpisodeKind.constraintDiscovered,
-      summary: 'Auth tokens must be refreshed',
-      content: 'Discovered that the token service requires proactive refresh.',
+      data: const <String, dynamic>{
+        'summary': 'Auth tokens must be refreshed',
+        'kind': 'constraintDiscovered',
+      },
     );
 
-    await store.save(collection: 'episodes', entity: episode);
+    await store.save(collection: 'entities', entity: entity);
 
     final loaded = await store.load(
-      collection: 'episodes',
-      id: 'ep-001',
+      collection: 'entities',
+      id: 'ent-001',
     );
 
     expect(loaded, isNotNull);
@@ -42,114 +42,114 @@ void main() {
   });
 
   test('listAll returns all entities in a collection', () async {
-    final first = Episode(
-      id: 'ep-001',
+    final first = WorldModelEntity(
+      id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
-      kind: EpisodeKind.taskPerformed,
-      summary: 'First episode',
-      content: 'Content one.',
+      data: const <String, dynamic>{
+        'val': 'one',
+      },
     );
 
-    final second = Episode(
-      id: 'ep-002',
+    final second = WorldModelEntity(
+      id: 'ent-002',
       createdAt: DateTime.utc(2025, 1, 2),
       updatedAt: DateTime.utc(2025, 1, 2),
-      kind: EpisodeKind.observation,
-      summary: 'Second episode',
-      content: 'Content two.',
+      data: const <String, dynamic>{
+        'val': 'two',
+      },
     );
 
-    await store.save(collection: 'episodes', entity: first);
-    await store.save(collection: 'episodes', entity: second);
+    await store.save(collection: 'entities', entity: first);
+    await store.save(collection: 'entities', entity: second);
 
     final all = await store.listAll(
-      collection: 'episodes',
+      collection: 'entities',
     );
 
     expect(all.length, equals(2));
   });
 
   test('save throws StateError on duplicate', () async {
-    final episode = Episode(
-      id: 'ep-001',
+    final entity = WorldModelEntity(
+      id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
-      kind: EpisodeKind.taskPerformed,
-      summary: 'An episode',
-      content: 'Content.',
+      data: const <String, dynamic>{
+        'val': 'test',
+      },
     );
 
-    await store.save(collection: 'episodes', entity: episode);
+    await store.save(collection: 'entities', entity: entity);
 
     expect(
-      () => store.save(collection: 'episodes', entity: episode),
+      () => store.save(collection: 'entities', entity: entity),
       throwsA(isA<StateError>()),
     );
   });
 
   test('update succeeds', () async {
-    final original = Episode(
-      id: 'ep-001',
+    final original = WorldModelEntity(
+      id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
-      kind: EpisodeKind.taskPerformed,
-      summary: 'Original summary',
-      content: 'Original content.',
+      data: const <String, dynamic>{
+        'summary': 'Original summary',
+      },
     );
 
-    await store.save(collection: 'episodes', entity: original);
+    await store.save(collection: 'entities', entity: original);
 
-    final updated = Episode(
-      id: 'ep-001',
+    final updated = WorldModelEntity(
+      id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025, 1, 2),
-      kind: EpisodeKind.taskPerformed,
-      summary: 'Updated summary',
-      content: 'Updated content.',
+      data: const <String, dynamic>{
+        'summary': 'Updated summary',
+      },
     );
 
     await store.update(
-      collection: 'episodes',
+      collection: 'entities',
       entity: updated,
     );
 
     final loaded = await store.load(
-      collection: 'episodes',
-      id: 'ep-001',
+      collection: 'entities',
+      id: 'ent-001',
     );
 
     expect(loaded!['summary'], equals('Updated summary'));
   });
 
   test('delete removes entity and returns true', () async {
-    final episode = Episode(
-      id: 'ep-001',
+    final entity = WorldModelEntity(
+      id: 'ent-001',
       createdAt: DateTime.utc(2025),
       updatedAt: DateTime.utc(2025),
-      kind: EpisodeKind.taskPerformed,
-      summary: 'To delete',
-      content: 'Content.',
+      data: const <String, dynamic>{
+        'val': 'to delete',
+      },
     );
 
-    await store.save(collection: 'episodes', entity: episode);
+    await store.save(collection: 'entities', entity: entity);
 
     final result = await store.delete(
-      collection: 'episodes',
-      id: 'ep-001',
+      collection: 'entities',
+      id: 'ent-001',
     );
     expect(result, isTrue);
 
     final loaded = await store.load(
-      collection: 'episodes',
-      id: 'ep-001',
+      collection: 'entities',
+      id: 'ent-001',
     );
     expect(loaded, isNull);
   });
 
   test('delete returns false for nonexistent entity', () async {
     final result = await store.delete(
-      collection: 'episodes',
+      collection: 'entities',
       id: 'nonexistent',
     );
     expect(result, isFalse);
@@ -157,7 +157,7 @@ void main() {
 
   test('load returns null for nonexistent entity', () async {
     final loaded = await store.load(
-      collection: 'episodes',
+      collection: 'entities',
       id: 'nonexistent',
     );
     expect(loaded, isNull);

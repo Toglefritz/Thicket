@@ -1,8 +1,7 @@
 import 'package:thicket_interface/src/mcp/mcp_server.dart';
-import 'package:thicket_interface/src/mcp/tools/define_concept_tool.dart';
+import 'package:thicket_interface/src/mcp/tools/forget_tool.dart';
 import 'package:thicket_interface/src/mcp/tools/get_version_tool.dart';
 import 'package:thicket_interface/src/mcp/tools/initialize_project_tool.dart';
-import 'package:thicket_interface/src/mcp/tools/learn_tool.dart';
 import 'package:thicket_interface/src/mcp/tools/recall_tool.dart';
 import 'package:thicket_interface/src/mcp/tools/remember_tool.dart';
 
@@ -20,7 +19,7 @@ const String version = '0.1.0';
 /// This process is intended to be launched by an MCP client (such as Kiro or another compatible IDE) rather than
 /// invoked directly by a user.
 Future<void> main(List<String> arguments) async {
-  final server = McpServer(
+  final McpServer server = McpServer(
     serverName: 'thicket',
     serverVersion: version,
   );
@@ -29,8 +28,7 @@ Future<void> main(List<String> arguments) async {
   server.registerTool(initializeProjectTool());
   server.registerTool(rememberTool());
   server.registerTool(recallTool());
-  server.registerTool(learnTool());
-  server.registerTool(defineConceptTool());
+  server.registerTool(forgetTool());
 
   await server.serve();
 }

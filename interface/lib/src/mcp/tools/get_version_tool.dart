@@ -8,10 +8,10 @@ McpTool getVersionTool({required String version}) {
   return McpTool(
     name: 'get_version',
     description: 'Returns the current version of the Thicket server.',
-    inputSchema: {
+    inputSchema: <String, dynamic>{
       'type': 'object',
       'properties': <String, dynamic>{},
     },
-    handler: (_) async => {'version': version},
+    handler: (_) async => <String, dynamic>{'version': version},
   );
 }

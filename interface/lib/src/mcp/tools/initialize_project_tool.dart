@@ -26,33 +26,35 @@ McpTool initializeProjectTool() {
     description:
         'Initializes Thicket for a project by creating a .thicket/project.json identity file and the centralized world '
         'model storage directory. If the project is already initialized, returns the existing identity.',
-    inputSchema: {
+    inputSchema: <String, dynamic>{
       'type': 'object',
-      'properties': {
-        'projectPath': {
+      'properties': <String, Map<String, Object>>{
+        'projectPath': <String, String>{
           'type': 'string',
-          'description': 'Absolute path to the root directory of the project to initialize.',
+          'description':
+              'Absolute path to the root directory of the project to initialize.',
         },
-        'projectName': {
+        'projectName': <String, String>{
           'type': 'string',
-          'description': 'A human-readable name for the project. Defaults to the directory name if not provided.',
+          'description':
+              'A human-readable name for the project. Defaults to the directory name if not provided.',
         },
-        'storageMode': {
+        'storageMode': <String, Object>{
           'type': 'string',
           'description':
               'The storage topology for the world model: "centralized" or "inRepo". Defaults to "centralized".',
-          'enum': ['centralized', 'inRepo'],
+          'enum': <String>['centralized', 'inRepo'],
         },
       },
-      'required': ['projectPath'],
+      'required': <String>['projectPath'],
     },
-    handler: (arguments) async {
-      final projectPath = arguments['projectPath'] as String?;
+    handler: (Map<String, dynamic> arguments) async {
+      final String? projectPath = arguments['projectPath'] as String?;
       if (projectPath == null || projectPath.isEmpty) {
         throw ArgumentError('projectPath is required');
       }
 
-      final projectDir = Directory(projectPath);
+      final Directory projectDir = Directory(projectPath);
       if (!projectDir.existsSync()) {
         throw ArgumentError(
           'Project directory does not exist: $projectPath',
@@ -60,28 +62,31 @@ McpTool initializeProjectTool() {
       }
 
       // Check if already initialized.
-      final thicketDir = Directory(p.join(projectPath, '.thicket'));
-      final identityFile = File(p.join(thicketDir.path, 'project.json'));
+      final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
+      final File identityFile = File(p.join(thicketDir.path, 'project.json'));
 
       if (identityFile.existsSync()) {
-        final existing = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
-        return {
+        final Map<String, dynamic> existing =
+            jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+        return <String, dynamic>{
           'status': 'already_initialized',
           'identity': existing,
         };
       }
 
       // Generate the project identity.
-      final generator = IdGenerator();
-      final projectId = generator.generate();
-      final projectName = (arguments['projectName'] as String?) ?? p.basename(projectPath);
-      final storageMode = (arguments['storageMode'] as String?) ?? 'centralized';
+      final IdGenerator generator = IdGenerator();
+      final String projectId = generator.generate();
+      final String projectName =
+          (arguments['projectName'] as String?) ?? p.basename(projectPath);
+      final String storageMode =
+          (arguments['storageMode'] as String?) ?? 'centralized';
 
       if (storageMode != 'centralized' && storageMode != 'inRepo') {
         throw ArgumentError('Invalid storageMode: $storageMode');
       }
 
-      final identity = ProjectIdentity(
+      final ProjectIdentity identity = ProjectIdentity(
         projectId: projectId,
         projectName: projectName,
         createdAt: DateTime.now().toUtc(),
@@ -99,17 +104,17 @@ McpTool initializeProjectTool() {
       if (storageMode == 'inRepo') {
         storagePath = p.join(projectPath, '.thicket', 'world_model');
       } else {
-        final home = ProjectResolver.getHomeDirectory();
+        final String home = ProjectResolver.getHomeDirectory();
         if (home.isEmpty) {
           throw StateError('Home directory environment variable is not set');
         }
         storagePath = p.join(home, '.thicket', 'projects', projectId);
       }
 
-      final storageDir = Directory(storagePath);
+      final Directory storageDir = Directory(storagePath);
       storageDir.createSync(recursive: true);
 
-      return {
+      return <String, dynamic>{
         'status': 'initialized',
         'identity': identity.toJson(),
         'storagePath': storageDir.path,

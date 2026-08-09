@@ -40,67 +40,55 @@ dart run tool/mcp_call.dart initialize_project \
 ```
 
 ### 3. `remember`
-Records a new experience episode in the world model database.
+Saves or updates a generic JSON entity inside a specified collection.
 *   `--projectPath` (Required): Absolute path to the project root.
-*   `--kind` (Required): Category of experience. Must be one of:
-    *   `taskPerformed`
-    *   `constraintDiscovered`
-    *   `approachFailed`
-    *   `implementationRejected`
-    *   `unexpectedInteraction`
-    *   `debuggingOutcome`
-    *   `observation`
-*   `--summary` (Required): A concise summary sentence.
-*   `--content` (Required): Extended description with reasoning or details.
+*   `--collection` (Required): The target collection (e.g. `experiences`, `beliefs`, `concepts`, or any custom namespace).
+*   `--id` (Optional): Unique identifier to assign or update. If omitted, a new ID is generated.
+*   `--data` (Required): A JSON-serialized object containing any fields desired. Note: Because arguments are parsed as key-value pairs, `--data` will expect a JSON string when tested from CLI harnesses.
 
 ```bash
+# Save a new experience episode with a generated ID
 dart run tool/mcp_call.dart remember \
   --projectPath /Users/scotthatfield/Documents/Projects/thicket \
-  --kind constraintDiscovered \
-  --summary "Vanilla CSS styling constraint" \
-  --content "We must use pure Vanilla CSS for layouts. Avoid using utility frameworks like Tailwind CSS unless explicitly requested."
+  --collection experiences \
+  --data '{"kind":"constraintDiscovered","summary":"Vanilla CSS only","content":"User prefers pure vanilla CSS over Tailwind."}'
+
+# Update a specific belief using its ID
+dart run tool/mcp_call.dart remember \
+  --projectPath /Users/scotthatfield/Documents/Projects/thicket \
+  --collection beliefs \
+  --id my-belief-id \
+  --data '{"claim":"Thicket uses dynamic JSON schemas","confidence":1.0}'
 ```
 
 ### 4. `recall`
-Retrieves experience episodes from the world model.
+Queries experience entities from the world model.
 *   `--projectPath` (Required): Absolute path to the project root.
-*   `--kind` (Optional): Filters results to only this experience category.
+*   `--collection` (Required): The target collection to query.
+*   `--id` (Optional): Filters results to only this specific entity ID. If omitted, lists all entities in the collection (newest first).
 
 ```bash
-# Retrieve all episodes
-dart run tool/mcp_call.dart recall \
-  --projectPath /Users/scotthatfield/Documents/Projects/thicket
-
-# Retrieve only constraints discovered
+# List all saved beliefs
 dart run tool/mcp_call.dart recall \
   --projectPath /Users/scotthatfield/Documents/Projects/thicket \
-  --kind constraintDiscovered
+  --collection beliefs
+
+# Retrieve a specific experience episode by its ID
+dart run tool/mcp_call.dart recall \
+  --projectPath /Users/scotthatfield/Documents/Projects/thicket \
+  --collection experiences \
+  --id 06c4eab1
 ```
 
-### 5. `learn`
-Stores a structured belief or hypothesis in the world model.
+### 5. `forget`
+Deletes a specified entity from a collection.
 *   `--projectPath` (Required): Absolute path to the project root.
-*   `--claim` (Required): Concise statement of what the agent believes to be true.
-*   `--rationale` (Required): Reasoning or evidence supporting the claim.
-*   `--confidence` (Required): Numeric certainty between `0.0` and `1.0`.
+*   `--collection` (Required): The target collection name.
+*   `--id` (Required): The identifier of the entity to delete.
 
 ```bash
-dart run tool/mcp_call.dart learn \
+dart run tool/mcp_call.dart forget \
   --projectPath /Users/scotthatfield/Documents/Projects/thicket \
-  --claim "Interface package uses thicket path dependency" \
-  --rationale "Allows developing interface and world model in local root-level silos" \
-  --confidence 1.0
-```
-
-### 6. `define_concept`
-Introduces an abstraction node to the project's ontology.
-*   `--projectPath` (Required): Absolute path to the project root.
-*   `--name` (Required): Noun or noun phrase representing the concept.
-*   `--description` (Required): Definition and usage instructions.
-
-```bash
-dart run tool/mcp_call.dart define_concept \
-  --projectPath /Users/scotthatfield/Documents/Projects/thicket \
-  --name "InterfaceBridge" \
-  --description "A component that exposes world model storage APIs to external transport layers like JSON-RPC and REST."
+  --collection experiences \
+  --id 06c4eab1
 ```

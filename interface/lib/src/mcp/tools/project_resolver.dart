@@ -13,7 +13,9 @@ class ProjectResolver {
   /// Safely resolves the user's home directory across different operating systems.
   static String getHomeDirectory() {
     if (Platform.isWindows) {
-      return Platform.environment['USERPROFILE'] ?? Platform.environment['APPDATA'] ?? '';
+      return Platform.environment['USERPROFILE'] ??
+          Platform.environment['APPDATA'] ??
+          '';
     }
     return Platform.environment['HOME'] ?? '';
   }
@@ -24,7 +26,7 @@ class ProjectResolver {
   ///
   /// Throws [StateError] if the home environment variables are not set for centralized storage mode.
   static String resolveStoragePath(String projectPath) {
-    final identityFile = File(
+    final File identityFile = File(
       p.join(projectPath, '.thicket', 'project.json'),
     );
 
@@ -35,15 +37,17 @@ class ProjectResolver {
       );
     }
 
-    final identity = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
-    final projectId = identity['projectId'] as String;
-    final storageMode = identity['storageMode'] as String? ?? 'centralized';
+    final Map<String, dynamic> identity =
+        jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+    final String projectId = identity['projectId'] as String;
+    final String storageMode =
+        identity['storageMode'] as String? ?? 'centralized';
 
     if (storageMode == 'inRepo') {
       return p.join(projectPath, '.thicket', 'world_model');
     }
 
-    final home = getHomeDirectory();
+    final String home = getHomeDirectory();
     if (home.isEmpty) {
       throw StateError('Home directory environment variable is not set');
     }

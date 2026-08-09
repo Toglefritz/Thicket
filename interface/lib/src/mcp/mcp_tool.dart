@@ -31,7 +31,7 @@ class McpTool {
   handler;
 
   /// Serializes this tool's metadata for a `tools/list` response.
-  Map<String, dynamic> toListEntry() => {
+  Map<String, dynamic> toListEntry() => <String, dynamic>{
     'name': name,
     'description': description,
     'inputSchema': inputSchema,

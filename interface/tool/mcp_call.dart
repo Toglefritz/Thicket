@@ -19,25 +19,28 @@ void main(List<String> arguments) async {
     exit(1);
   }
 
-  final toolName = arguments.first;
-  final toolArguments = _parseArguments(
+  final String toolName = arguments.first;
+  final Map<String, dynamic> toolArguments = _parseArguments(
     arguments.skip(1).toList(),
   );
 
   // Spawn the MCP server as a subprocess.
-  final server = await Process.start(
+  final Process server = await Process.start(
     'dart',
-    ['run', 'bin/thicket.dart'],
+    <String>['run', 'bin/thicket.dart'],
     workingDirectory: Directory.current.path,
   );
 
   // Set up a single stream subscription that feeds lines into a queue. This avoids re-listening to stdout multiple
   // times.
-  final lineController = StreamController<String>();
-  server.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(lineController.add);
-  final lineQueue = StreamQueue(lineController.stream);
+  final StreamController<String> lineController = StreamController<String>();
+  server.stdout
+      .transform(utf8.decoder)
+      .transform(const LineSplitter())
+      .listen(lineController.add);
+  final StreamQueue lineQueue = StreamQueue(lineController.stream);
 
-  var requestId = 0;
+  int requestId = 0;
 
   /// Sends a JSON-RPC request and reads the next response line.
   Future<Map<String, dynamic>> sendRequest(
@@ -45,7 +48,7 @@ void main(List<String> arguments) async {
     Map<String, dynamic>? params,
   }) async {
     requestId++;
-    final request = <String, dynamic>{
+    final Map<String, dynamic> request = <String, dynamic>{
       'jsonrpc': '2.0',
       'id': requestId,
       'method': method,
@@ -55,13 +58,13 @@ void main(List<String> arguments) async {
     }
 
     server.stdin.writeln(jsonEncode(request));
-    final line = await lineQueue.next;
+    final String line = await lineQueue.next;
     return jsonDecode(line) as Map<String, dynamic>;
   }
 
   /// Sends a JSON-RPC notification (no response expected).
   void sendNotification(String method) {
-    final notification = <String, dynamic>{
+    final Map<String, dynamic> notification = <String, dynamic>{
       'jsonrpc': '2.0',
       'method': method,
     };
@@ -70,16 +73,17 @@ void main(List<String> arguments) async {
 
   try {
     // Step 1: Initialize handshake.
-    final initResult = await sendRequest(
+    final Map<String, dynamic> initResult = await sendRequest(
       'initialize',
-      params: {
+      params: <String, dynamic>{
         'protocolVersion': '2025-06-18',
         'capabilities': <String, dynamic>{},
-        'clientInfo': {'name': 'mcp_call', 'version': '1.0.0'},
+        'clientInfo': <String, String>{'name': 'mcp_call', 'version': '1.0.0'},
       },
     );
 
-    final initError = initResult['error'] as Map<String, dynamic>?;
+    final Map<String, dynamic>? initError =
+        initResult['error'] as Map<String, dynamic>?;
     if (initError != null) {
       stderr.writeln('Initialize failed: ${initError['message']}');
       server.kill();
@@ -90,34 +94,36 @@ void main(List<String> arguments) async {
     sendNotification('notifications/initialized');
 
     // Step 3: Call the requested tool.
-    final callResult = await sendRequest(
+    final Map<String, dynamic> callResult = await sendRequest(
       'tools/call',
-      params: {
+      params: <String, dynamic>{
         'name': toolName,
         'arguments': toolArguments,
       },
     );
 
     // Step 4: Print the result.
-    final callError = callResult['error'] as Map<String, dynamic>?;
+    final Map<String, dynamic>? callError =
+        callResult['error'] as Map<String, dynamic>?;
     if (callError != null) {
       stderr.writeln('Error: ${callError['message']}');
       server.kill();
       exit(1);
     }
 
-    final result = callResult['result'] as Map<String, dynamic>;
-    final isError = (result['isError'] as bool?) ?? false;
+    final Map<String, dynamic> result =
+        callResult['result'] as Map<String, dynamic>;
+    final bool isError = (result['isError'] as bool?) ?? false;
 
     if (isError) {
       stderr.writeln('Tool error:');
     }
 
     // Extract and pretty-print the content.
-    final content = result['content'] as List<dynamic>;
+    final List<dynamic> content = result['content'] as List<dynamic>;
     for (final dynamic block in content) {
-      final contentBlock = block as Map<String, dynamic>;
-      final text = contentBlock['text'] as String;
+      final Map<String, dynamic> contentBlock = block as Map<String, dynamic>;
+      final String text = contentBlock['text'] as String;
 
       // Attempt to parse as JSON for pretty-printing.
       try {
@@ -144,7 +150,7 @@ void main(List<String> arguments) async {
 class StreamQueue {
   StreamQueue(this._stream) {
     _subscription = _stream.listen(
-      (line) {
+      (String line) {
         if (_waiters.isNotEmpty) {
           _waiters.removeAt(0).complete(line);
         } else {
@@ -152,7 +158,7 @@ class StreamQueue {
         }
       },
       onDone: () {
-        for (final waiter in _waiters) {
+        for (final Completer<String> waiter in _waiters) {
           waiter.completeError(StateError('Stream closed'));
         }
         _waiters.clear();
@@ -160,8 +166,8 @@ class StreamQueue {
     );
   }
   final Stream<String> _stream;
-  final List<String> _buffer = [];
-  final List<Completer<String>> _waiters = [];
+  final List<String> _buffer = <String>[];
+  final List<Completer<String>> _waiters = <Completer<String>>[];
   late final StreamSubscription<String> _subscription;
 
   /// Returns the next line from the stream, waiting if necessary.
@@ -169,7 +175,7 @@ class StreamQueue {
     if (_buffer.isNotEmpty) {
       return Future<String>.value(_buffer.removeAt(0));
     }
-    final completer = Completer<String>();
+    final Completer<String> completer = Completer<String>();
     _waiters.add(completer);
     return completer.future;
   }
@@ -183,14 +189,14 @@ class StreamQueue {
 /// Keys must be prefixed with `--`. The following argument is treated as the value unless it also starts with `--`, in
 /// which case the key is treated as a boolean flag.
 Map<String, dynamic> _parseArguments(List<String> args) {
-  final result = <String, dynamic>{};
-  var i = 0;
+  final Map<String, dynamic> result = <String, dynamic>{};
+  int i = 0;
 
   while (i < args.length) {
-    final arg = args[i];
+    final String arg = args[i];
 
     if (arg.startsWith('--')) {
-      final key = arg.substring(2);
+      final String key = arg.substring(2);
 
       if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
         result[key] = args[i + 1];

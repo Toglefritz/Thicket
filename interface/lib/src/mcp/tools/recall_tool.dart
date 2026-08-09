@@ -2,80 +2,90 @@ import 'package:thicket/thicket.dart';
 import '../mcp_tool.dart';
 import 'project_resolver.dart';
 
-/// Creates the `recall` tool which retrieves episodes from the project's world model.
+/// Creates the `recall` tool which retrieves entities from a specified collection in the project's world model.
 ///
-/// This is the primary read path for the experience layer. When an agent begins work on a task, it calls this tool to
-/// retrieve relevant prior experiences that may inform its approach.
+/// Required arguments:
+/// - `projectPath`: absolute path to the project root
+/// - `collection`: target collection name
 ///
-/// Without any filter arguments, returns all episodes in the project. Optional filters narrow the results:
-/// - `kind`: return only episodes of a specific category
-/// - `tags`: return episodes that contain any of the specified tags
-/// - `relatedPaths`: return episodes related to any of the specified file paths
-///
-/// Results are returned in reverse chronological order (most recent first).
+/// Optional arguments:
+/// - `id`: unique identifier of a specific entity to retrieve. If omitted, returns all entities in the collection.
 McpTool recallTool() {
   return McpTool(
     name: 'recall',
     description:
-        'Retrieves episodes from the project world model. Use this at the start of a task to recall relevant prior '
-        'experiences: constraints discovered, approaches that failed, debugging outcomes, and other knowledge '
-        'accumulated in previous sessions. Supports optional filtering by kind.',
-    inputSchema: {
+        'Retrieves entities from a specified collection in the project world model. '
+        'If an ID is provided, retrieves only the specific entity with that ID. '
+        'If no ID is provided, lists all entities in the collection, sorted by creation date (newest first).',
+    inputSchema: <String, dynamic>{
       'type': 'object',
-      'properties': {
-        'projectPath': {
+      'properties': <String, Map<String, String>>{
+        'projectPath': <String, String>{
           'type': 'string',
           'description': 'Absolute path to the root directory of the project.',
         },
-        'kind': {
+        'collection': <String, String>{
           'type': 'string',
-          'description': 'Filter to only episodes of this category.',
-          'enum': [
-            'taskPerformed',
-            'constraintDiscovered',
-            'approachFailed',
-            'implementationRejected',
-            'unexpectedInteraction',
-            'debuggingOutcome',
-            'observation',
-          ],
+          'description':
+              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+        },
+        'id': <String, String>{
+          'type': 'string',
+          'description':
+              'Optional identifier of a specific entity to retrieve.',
         },
       },
-      'required': ['projectPath'],
+      'required': <String>['projectPath', 'collection'],
     },
-    handler: (arguments) async {
-      final projectPath = arguments['projectPath'] as String;
-      final kindFilter = arguments['kind'] as String?;
+    handler: (Map<String, dynamic> arguments) async {
+      final String projectPath = arguments['projectPath'] as String;
+      final String collection = arguments['collection'] as String;
+      final String? id = arguments['id'] as String?;
 
       // Resolve the project's storage directory.
-      final storagePath = ProjectResolver.resolveStoragePath(
+      final String storagePath = ProjectResolver.resolveStoragePath(
         projectPath,
       );
-      final store = EntityStore(storagePath: storagePath);
+      final EntityStore store = EntityStore(storagePath: storagePath);
 
-      // Load all episodes from the store.
-      final allEpisodes = await store.listAll(
-        collection: 'episodes',
-      );
+      if (id != null && id.isNotEmpty) {
+        final Map<String, dynamic>? entityJson = await store.load(
+          collection: collection,
+          id: id,
+        );
 
-      // Deserialize into typed episodes for filtering.
-      var episodes = allEpisodes.map(Episode.fromJson).toList();
+        if (entityJson != null) {
+          final WorldModelEntity entity = WorldModelEntity.fromJson(entityJson);
+          return <String, dynamic>{
+            'count': 1,
+            'entities': <Map<String, dynamic>>[entity.toJson()],
+          };
+        } else {
+          return <String, dynamic>{
+            'count': 0,
+            'entities': <Map<String, dynamic>>[],
+          };
+        }
+      } else {
+        final List<Map<String, dynamic>> allJson = await store.listAll(
+          collection: collection,
+        );
 
-      // Apply kind filter.
-      if (kindFilter != null) {
-        final kind = EpisodeKind.values.byName(kindFilter);
-        episodes = episodes.where((ep) => ep.kind == kind).toList();
+        final List<WorldModelEntity> entities = allJson
+            .map(WorldModelEntity.fromJson)
+            .toList();
+
+        // Sort by creation time, most recent first.
+        entities.sort(
+          (WorldModelEntity a, WorldModelEntity b) =>
+              b.createdAt.compareTo(a.createdAt),
+        );
+
+        return <String, dynamic>{
+          'count': entities.length,
+          'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
+        };
       }
-
-      // Sort by creation time, most recent first.
-      episodes.sort(
-        (a, b) => b.createdAt.compareTo(a.createdAt),
-      );
-
-      return {
-        'count': episodes.length,
-        'episodes': episodes.map((ep) => ep.toJson()).toList(),
-      };
     },
   );
 }

@@ -41,7 +41,8 @@ class JsonRpcTransport {
       }
 
       try {
-        final json = jsonDecode(line) as Map<String, dynamic>;
+        final Map<String, dynamic> json =
+            jsonDecode(line) as Map<String, dynamic>;
         await onMessage(JsonRpcMessage(json));
       } on FormatException {
         sendError(null, -32700, 'Parse error');
@@ -51,7 +52,7 @@ class JsonRpcTransport {
 
   /// Sends a successful JSON-RPC response.
   void sendResult(Object? id, Map<String, dynamic> result) {
-    _send({
+    _send(<String, dynamic>{
       'jsonrpc': '2.0',
       'id': id,
       'result': result,
@@ -65,7 +66,7 @@ class JsonRpcTransport {
     String message, {
     Object? data,
   }) {
-    final error = <String, dynamic>{
+    final Map<String, dynamic> error = <String, dynamic>{
       'code': code,
       'message': message,
     };
@@ -74,7 +75,7 @@ class JsonRpcTransport {
       error['data'] = data;
     }
 
-    _send({
+    _send(<String, dynamic>{
       'jsonrpc': '2.0',
       'id': id,
       'error': error,

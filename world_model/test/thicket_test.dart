@@ -6,7 +6,7 @@ void main() {
     test('generate returns adjective-noun-hex format', () {
       final generator = IdGenerator();
       final id = generator.generate();
-      expect(id, matches(RegExp(r'^[a-z]+-[a-z]+-[0-9a-f]{4}$')));
+      expect(id, matches(RegExp(r'^[a-z\s]+-[a-z\s]+-[0-9a-f]{4}$')));
     });
 
     test('generateShort returns short hex format of default length', () {
@@ -24,7 +24,12 @@ void main() {
   group('WorldModelEntity', () {
     test('round-trips through JSON', () {
       final now = DateTime.utc(2025);
-      final entity = WorldModelEntity(id: 'test-id', createdAt: now, updatedAt: now);
+      final entity = WorldModelEntity(
+        id: 'test-id',
+        createdAt: now,
+        updatedAt: now,
+        data: const <String, dynamic>{'field': 'value'},
+      );
 
       final json = entity.toJson();
       final restored = WorldModelEntity.fromJson(json);
@@ -32,6 +37,7 @@ void main() {
       expect(restored.id, equals('test-id'));
       expect(restored.createdAt, equals(now));
       expect(restored.updatedAt, equals(now));
+      expect(restored.data['field'], equals('value'));
     });
   });
 

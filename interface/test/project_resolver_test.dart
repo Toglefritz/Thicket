@@ -6,15 +6,18 @@ import 'package:thicket_interface/src/mcp/tools/project_resolver.dart';
 void main() {
   group('ProjectResolver', () {
     test('getHomeDirectory returns a value', () {
-      final home = ProjectResolver.getHomeDirectory();
+      final String home = ProjectResolver.getHomeDirectory();
       expect(home, isNotEmpty);
     });
 
     test('resolveStoragePath resolves centralized mode', () {
-      final tempDir = Directory.systemTemp.createTempSync('thicket-test-centralized');
+      final Directory tempDir = Directory.systemTemp.createTempSync(
+        'thicket-test-centralized',
+      );
       try {
-        final thicketDir = Directory(p.join(tempDir.path, '.thicket'))..createSync();
-        final identityFile = File(p.join(thicketDir.path, 'project.json'));
+        final Directory thicketDir = Directory(p.join(tempDir.path, '.thicket'))
+          ..createSync();
+        final File identityFile = File(p.join(thicketDir.path, 'project.json'));
         identityFile.writeAsStringSync('''
 {
   "projectId": "test-project-123",
@@ -24,19 +27,27 @@ void main() {
 }
 ''');
 
-        final resolved = ProjectResolver.resolveStoragePath(tempDir.path);
-        final home = ProjectResolver.getHomeDirectory();
-        expect(resolved, equals(p.join(home, '.thicket', 'projects', 'test-project-123')));
+        final String resolved = ProjectResolver.resolveStoragePath(
+          tempDir.path,
+        );
+        final String home = ProjectResolver.getHomeDirectory();
+        expect(
+          resolved,
+          equals(p.join(home, '.thicket', 'projects', 'test-project-123')),
+        );
       } finally {
         tempDir.deleteSync(recursive: true);
       }
     });
 
     test('resolveStoragePath resolves inRepo mode', () {
-      final tempDir = Directory.systemTemp.createTempSync('thicket-test-inrepo');
+      final Directory tempDir = Directory.systemTemp.createTempSync(
+        'thicket-test-inrepo',
+      );
       try {
-        final thicketDir = Directory(p.join(tempDir.path, '.thicket'))..createSync();
-        final identityFile = File(p.join(thicketDir.path, 'project.json'));
+        final Directory thicketDir = Directory(p.join(tempDir.path, '.thicket'))
+          ..createSync();
+        final File identityFile = File(p.join(thicketDir.path, 'project.json'));
         identityFile.writeAsStringSync('''
 {
   "projectId": "test-project-456",
@@ -46,19 +57,32 @@ void main() {
 }
 ''');
 
-        final resolved = ProjectResolver.resolveStoragePath(tempDir.path);
-        expect(resolved, equals(p.join(tempDir.path, '.thicket', 'world_model')));
+        final String resolved = ProjectResolver.resolveStoragePath(
+          tempDir.path,
+        );
+        expect(
+          resolved,
+          equals(p.join(tempDir.path, '.thicket', 'world_model')),
+        );
       } finally {
         tempDir.deleteSync(recursive: true);
       }
     });
 
-    test('resolveStoragePath defaults to centralized if storageMode missing', () {
-      final tempDir = Directory.systemTemp.createTempSync('thicket-test-missing');
-      try {
-        final thicketDir = Directory(p.join(tempDir.path, '.thicket'))..createSync();
-        final identityFile = File(p.join(thicketDir.path, 'project.json'));
-        identityFile.writeAsStringSync('''
+    test(
+      'resolveStoragePath defaults to centralized if storageMode missing',
+      () {
+        final Directory tempDir = Directory.systemTemp.createTempSync(
+          'thicket-test-missing',
+        );
+        try {
+          final Directory thicketDir = Directory(
+            p.join(tempDir.path, '.thicket'),
+          )..createSync();
+          final File identityFile = File(
+            p.join(thicketDir.path, 'project.json'),
+          );
+          identityFile.writeAsStringSync('''
 {
   "projectId": "test-project-789",
   "projectName": "Test Project 3",
@@ -66,12 +90,18 @@ void main() {
 }
 ''');
 
-        final resolved = ProjectResolver.resolveStoragePath(tempDir.path);
-        final home = ProjectResolver.getHomeDirectory();
-        expect(resolved, equals(p.join(home, '.thicket', 'projects', 'test-project-789')));
-      } finally {
-        tempDir.deleteSync(recursive: true);
-      }
-    });
+          final String resolved = ProjectResolver.resolveStoragePath(
+            tempDir.path,
+          );
+          final String home = ProjectResolver.getHomeDirectory();
+          expect(
+            resolved,
+            equals(p.join(home, '.thicket', 'projects', 'test-project-789')),
+          );
+        } finally {
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
   });
 }
