@@ -15,8 +15,7 @@ void main() {
         'thicket-test-centralized',
       );
       try {
-        final Directory thicketDir = Directory(p.join(tempDir.path, '.thicket'))
-          ..createSync();
+        final Directory thicketDir = Directory(p.join(tempDir.path, '.thicket'))..createSync();
         final File identityFile = File(p.join(thicketDir.path, 'project.json'));
         identityFile.writeAsStringSync('''
 {
@@ -45,8 +44,7 @@ void main() {
         'thicket-test-inrepo',
       );
       try {
-        final Directory thicketDir = Directory(p.join(tempDir.path, '.thicket'))
-          ..createSync();
+        final Directory thicketDir = Directory(p.join(tempDir.path, '.thicket'))..createSync();
         final File identityFile = File(p.join(thicketDir.path, 'project.json'));
         identityFile.writeAsStringSync('''
 {

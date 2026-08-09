@@ -28,18 +28,15 @@ McpTool rememberTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description':
-              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description': 'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
         'id': <String, String>{
           'type': 'string',
-          'description':
-              'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
+          'description': 'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
         },
         'data': <String, String>{
           'type': 'object',
-          'description':
-              'The flexible JSON payload containing the entity properties.',
+          'description': 'The flexible JSON payload containing the entity properties.',
         },
       },
       'required': <String>['projectPath', 'collection', 'data'],
@@ -48,8 +45,7 @@ McpTool rememberTool() {
       final String projectPath = arguments['projectPath'] as String;
       final String collection = arguments['collection'] as String;
       final String? id = arguments['id'] as String?;
-      final Map<String, dynamic> data =
-          arguments['data'] as Map<String, dynamic>;
+      final Map<String, dynamic> data = arguments['data'] as Map<String, dynamic>;
 
       // Resolve the project's storage directory.
       final String storagePath = ProjectResolver.resolveStoragePath(

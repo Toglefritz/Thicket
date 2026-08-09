@@ -34,10 +34,7 @@ void main(List<String> arguments) async {
   // Set up a single stream subscription that feeds lines into a queue. This avoids re-listening to stdout multiple
   // times.
   final StreamController<String> lineController = StreamController<String>();
-  server.stdout
-      .transform(utf8.decoder)
-      .transform(const LineSplitter())
-      .listen(lineController.add);
+  server.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen(lineController.add);
   final StreamQueue lineQueue = StreamQueue(lineController.stream);
 
   int requestId = 0;
@@ -82,8 +79,7 @@ void main(List<String> arguments) async {
       },
     );
 
-    final Map<String, dynamic>? initError =
-        initResult['error'] as Map<String, dynamic>?;
+    final Map<String, dynamic>? initError = initResult['error'] as Map<String, dynamic>?;
     if (initError != null) {
       stderr.writeln('Initialize failed: ${initError['message']}');
       server.kill();
@@ -103,16 +99,14 @@ void main(List<String> arguments) async {
     );
 
     // Step 4: Print the result.
-    final Map<String, dynamic>? callError =
-        callResult['error'] as Map<String, dynamic>?;
+    final Map<String, dynamic>? callError = callResult['error'] as Map<String, dynamic>?;
     if (callError != null) {
       stderr.writeln('Error: ${callError['message']}');
       server.kill();
       exit(1);
     }
 
-    final Map<String, dynamic> result =
-        callResult['result'] as Map<String, dynamic>;
+    final Map<String, dynamic> result = callResult['result'] as Map<String, dynamic>;
     final bool isError = (result['isError'] as bool?) ?? false;
 
     if (isError) {

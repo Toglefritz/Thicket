@@ -140,8 +140,7 @@ class McpServer {
       return;
     }
 
-    final Map<String, dynamic> arguments =
-        (params['arguments'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final Map<String, dynamic> arguments = (params['arguments'] as Map<String, dynamic>?) ?? <String, dynamic>{};
 
     try {
       final Map<String, dynamic> result = await tool.handler(arguments);

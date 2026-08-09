@@ -31,13 +31,11 @@ McpTool initializeProjectTool() {
       'properties': <String, Map<String, Object>>{
         'projectPath': <String, String>{
           'type': 'string',
-          'description':
-              'Absolute path to the root directory of the project to initialize.',
+          'description': 'Absolute path to the root directory of the project to initialize.',
         },
         'projectName': <String, String>{
           'type': 'string',
-          'description':
-              'A human-readable name for the project. Defaults to the directory name if not provided.',
+          'description': 'A human-readable name for the project. Defaults to the directory name if not provided.',
         },
         'storageMode': <String, Object>{
           'type': 'string',
@@ -66,8 +64,7 @@ McpTool initializeProjectTool() {
       final File identityFile = File(p.join(thicketDir.path, 'project.json'));
 
       if (identityFile.existsSync()) {
-        final Map<String, dynamic> existing =
-            jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+        final Map<String, dynamic> existing = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
         return <String, dynamic>{
           'status': 'already_initialized',
           'identity': existing,
@@ -77,10 +74,8 @@ McpTool initializeProjectTool() {
       // Generate the project identity.
       final IdGenerator generator = IdGenerator();
       final String projectId = generator.generate();
-      final String projectName =
-          (arguments['projectName'] as String?) ?? p.basename(projectPath);
-      final String storageMode =
-          (arguments['storageMode'] as String?) ?? 'centralized';
+      final String projectName = (arguments['projectName'] as String?) ?? p.basename(projectPath);
+      final String storageMode = (arguments['storageMode'] as String?) ?? 'centralized';
 
       if (storageMode != 'centralized' && storageMode != 'inRepo') {
         throw ArgumentError('Invalid storageMode: $storageMode');

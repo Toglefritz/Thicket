@@ -26,13 +26,11 @@ McpTool recallTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description':
-              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description': 'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
         'id': <String, String>{
           'type': 'string',
-          'description':
-              'Optional identifier of a specific entity to retrieve.',
+          'description': 'Optional identifier of a specific entity to retrieve.',
         },
       },
       'required': <String>['projectPath', 'collection'],
@@ -71,14 +69,11 @@ McpTool recallTool() {
           collection: collection,
         );
 
-        final List<WorldModelEntity> entities = allJson
-            .map(WorldModelEntity.fromJson)
-            .toList();
+        final List<WorldModelEntity> entities = allJson.map(WorldModelEntity.fromJson).toList();
 
         // Sort by creation time, most recent first.
         entities.sort(
-          (WorldModelEntity a, WorldModelEntity b) =>
-              b.createdAt.compareTo(a.createdAt),
+          (WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt),
         );
 
         return <String, dynamic>{

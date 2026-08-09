@@ -13,9 +13,7 @@ class ProjectResolver {
   /// Safely resolves the user's home directory across different operating systems.
   static String getHomeDirectory() {
     if (Platform.isWindows) {
-      return Platform.environment['USERPROFILE'] ??
-          Platform.environment['APPDATA'] ??
-          '';
+      return Platform.environment['USERPROFILE'] ?? Platform.environment['APPDATA'] ?? '';
     }
     return Platform.environment['HOME'] ?? '';
   }
@@ -37,11 +35,9 @@ class ProjectResolver {
       );
     }
 
-    final Map<String, dynamic> identity =
-        jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+    final Map<String, dynamic> identity = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
     final String projectId = identity['projectId'] as String;
-    final String storageMode =
-        identity['storageMode'] as String? ?? 'centralized';
+    final String storageMode = identity['storageMode'] as String? ?? 'centralized';
 
     if (storageMode == 'inRepo') {
       return p.join(projectPath, '.thicket', 'world_model');

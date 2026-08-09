@@ -41,8 +41,7 @@ class JsonRpcTransport {
       }
 
       try {
-        final Map<String, dynamic> json =
-            jsonDecode(line) as Map<String, dynamic>;
+        final Map<String, dynamic> json = jsonDecode(line) as Map<String, dynamic>;
         await onMessage(JsonRpcMessage(json));
       } on FormatException {
         sendError(null, -32700, 'Parse error');

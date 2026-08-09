@@ -1,0 +1,18 @@
+name: thicket_agent
+description: Event-driven autonomous agent runtime for Thicket.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  google_generative_ai: ^0.4.0
+  path: ^1.9.0
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
+  thicket:
+    path: ../world_model
+
+dev_dependencies:
+  test: ^1.24.0
