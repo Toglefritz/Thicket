@@ -1,0 +1,270 @@
+{
+  "appTitle": "Dashboard",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "auditLogSubtitle": "Real-time history of events dispatched and cognitive agent actions.",
+  "@auditLogSubtitle": {
+    "description": "Subtitle text for the Audit Log Stream page"
+  },
+  "buttonAddEntity": "ADD ENTITY",
+  "@buttonAddEntity": {
+    "description": "Label for the button that opens the add entity dialog"
+  },
+  "buttonCancel": "CANCEL",
+  "@buttonCancel": {
+    "description": "Label for the cancel button in dialogs"
+  },
+  "buttonDelete": "DELETE",
+  "@buttonDelete": {
+    "description": "Label for the delete button in the confirmation dialog"
+  },
+  "buttonDispatchWebhook": "DISPATCH SIMULATED WEBHOOK",
+  "@buttonDispatchWebhook": {
+    "description": "Text inside the button used to send mock webhooks to the agent"
+  },
+  "buttonRefreshDb": "REFRESH DB",
+  "@buttonRefreshDb": {
+    "description": "Label for the button that refreshes the world model database"
+  },
+  "buttonSave": "SAVE",
+  "@buttonSave": {
+    "description": "Label for the save button in the add entity dialog"
+  },
+  "buttonUpdate": "UPDATE",
+  "@buttonUpdate": {
+    "description": "Label for the update button in the edit entity dialog"
+  },
+  "confirmDeleteEntity": "Are you sure you want to permanently delete entity \"{id}\"?",
+  "@confirmDeleteEntity": {
+    "description": "Confirmation message shown before deleting an entity",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "description": "The entity identifier"
+      }
+    }
+  },
+  "consoleTitle": "Thicket Console",
+  "@consoleTitle": {
+    "description": "The title displayed in the sidebar header"
+  },
+  "entityCreatedAt": "Created: {timestamp}",
+  "@entityCreatedAt": {
+    "description": "Label showing the creation timestamp of an entity",
+    "placeholders": {
+      "timestamp": {
+        "type": "String",
+        "description": "Formatted creation date and time"
+      }
+    }
+  },
+  "entityModifiedAt": "Modified: {timestamp}",
+  "@entityModifiedAt": {
+    "description": "Label showing the last modification timestamp of an entity",
+    "placeholders": {
+      "timestamp": {
+        "type": "String",
+        "description": "Formatted modification date and time"
+      }
+    }
+  },
+  "entityUpdatedAtTime": "Updated {time}",
+  "@entityUpdatedAtTime": {
+    "description": "Short timestamp shown in the entity list tile subtitle",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "description": "Formatted time portion of the update timestamp"
+      }
+    }
+  },
+  "errorIdCannotBeEmpty": "ID cannot be empty",
+  "@errorIdCannotBeEmpty": {
+    "description": "Validation error shown in the add entity dialog when the ID field is left blank"
+  },
+  "errorInvalidJson": "Invalid JSON: {error}",
+  "@errorInvalidJson": {
+    "description": "Error message shown in entity dialogs when the JSON input is malformed",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The parse error details"
+      }
+    }
+  },
+  "errorInvalidJsonPayload": "Invalid JSON Payload: {error}",
+  "@errorInvalidJsonPayload": {
+    "description": "Snackbar error message shown when the webhook payload cannot be parsed as JSON",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The parse error details"
+      }
+    }
+  },
+  "hintEntityId": "e.g. exp_a2b3",
+  "@hintEntityId": {
+    "description": "Hint text inside the entity ID input field"
+  },
+  "labelAgentReasoning": "AGENT REASONING & RESPONSE LOGS",
+  "@labelAgentReasoning": {
+    "description": "Label for the panel displaying agent reasoning outputs"
+  },
+  "labelAgentRuntime": "AGENT RUNTIME",
+  "@labelAgentRuntime": {
+    "description": "Label for the agent runtime connection status in the sidebar"
+  },
+  "labelCollection": "COLLECTION",
+  "@labelCollection": {
+    "description": "Label for the collection dropdown selector"
+  },
+  "labelEntities": "ENTITIES",
+  "@labelEntities": {
+    "description": "Label for the list of entities under a collection"
+  },
+  "labelEntityId": "ENTITY ID (Short generator)",
+  "@labelEntityId": {
+    "description": "Label for the entity ID input field in the dialog"
+  },
+  "labelEventTemplate": "EVENT TEMPLATE",
+  "@labelEventTemplate": {
+    "description": "Label for the event template dropdown selector"
+  },
+  "labelJsonPayload": "JSON PAYLOAD",
+  "@labelJsonPayload": {
+    "description": "Label for the JSON payload editor text field"
+  },
+  "labelProjectPath": "PROJECT PATH",
+  "@labelProjectPath": {
+    "description": "Label for the project path input field in the sidebar"
+  },
+  "labelProperties": "PROPERTIES (JSON Map)",
+  "@labelProperties": {
+    "description": "Label for the entity data properties input field in the dialog"
+  },
+  "labelRawData": "RAW DATA DATA OBJECT",
+  "@labelRawData": {
+    "description": "Header for the raw entity JSON view"
+  },
+  "labelRawPayloadResponse": "RAW PAYLOAD RESPONSE",
+  "@labelRawPayloadResponse": {
+    "description": "Label for the raw response JSON code block"
+  },
+  "lampOff": "OFF",
+  "@lampOff": {
+    "description": "Label for the lamp switch when it is in the off position"
+  },
+  "lampOn": "ON",
+  "@lampOn": {
+    "description": "Label for the lamp switch when it is in the on position"
+  },
+  "menuAuditLogStream": "Audit Log Stream",
+  "@menuAuditLogStream": {
+    "description": "Label for the Audit Log Stream tab in the sidebar menu"
+  },
+  "menuWebhookSimulator": "Webhook Simulator",
+  "@menuWebhookSimulator": {
+    "description": "Label for the Webhook Simulator tab in the sidebar menu"
+  },
+  "menuWorldModelExplorer": "World Model Explorer",
+  "@menuWorldModelExplorer": {
+    "description": "Label for the World Model Explorer tab in the sidebar menu"
+  },
+  "noCollectionsNotice": "No collections detected in the world model database storage mode.",
+  "@noCollectionsNotice": {
+    "description": "Message shown when no database collections are found"
+  },
+  "noEntitiesNotice": "No entities in collection.",
+  "@noEntitiesNotice": {
+    "description": "Message shown when the selected collection is empty"
+  },
+  "noLogsNotice": "No logged operations. Try triggering a webhook event to start.",
+  "@noLogsNotice": {
+    "description": "Placeholder message shown when there are no audit logs yet"
+  },
+  "noWebhookSentNotice": "No webhook sent yet in this session. Trigger an event on the left.",
+  "@noWebhookSentNotice": {
+    "description": "Placeholder text shown when no webhook has been dispatched yet"
+  },
+  "projectPathNotice": "Ensure your project path is correct and initialized at {path}",
+  "@projectPathNotice": {
+    "description": "Message prompting user to check their project path",
+    "placeholders": {
+      "path": {
+        "type": "String",
+        "description": "The current project path"
+      }
+    }
+  },
+  "selectEntityNotice": "Select an entity to inspect detail properties.",
+  "@selectEntityNotice": {
+    "description": "Placeholder message shown when no entity has been selected yet"
+  },
+  "statusOffline": "OFFLINE",
+  "@statusOffline": {
+    "description": "Status text shown when the agent server is offline"
+  },
+  "statusOnline": "ONLINE",
+  "@statusOnline": {
+    "description": "Status text shown when the agent server is online"
+  },
+  "templateFilesystemChange": "Local Filesystem Change",
+  "@templateFilesystemChange": {
+    "description": "Display label for the filesystem modification event template in the webhook simulator dropdown"
+  },
+  "templateGithubPush": "GitHub Git Push Event",
+  "@templateGithubPush": {
+    "description": "Display label for the GitHub push event template in the webhook simulator dropdown"
+  },
+  "templateSlackQuery": "Slack Channel Query",
+  "@templateSlackQuery": {
+    "description": "Display label for the Slack message event template in the webhook simulator dropdown"
+  },
+  "titleAddEntity": "Add World Model Entity",
+  "@titleAddEntity": {
+    "description": "Title of the dialog used to add a new entity"
+  },
+  "titleDeleteEntity": "Delete Entity",
+  "@titleDeleteEntity": {
+    "description": "Title of the delete entity confirmation dialog"
+  },
+  "titleEditEntity": "Edit Entity {id}",
+  "@titleEditEntity": {
+    "description": "Title of the dialog used to edit an existing entity",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "description": "The entity identifier"
+      }
+    }
+  },
+  "tooltipDeleteEntity": "Delete entity",
+  "@tooltipDeleteEntity": {
+    "description": "Tooltip for the delete button on an entity detail card"
+  },
+  "tooltipEditProperties": "Edit properties",
+  "@tooltipEditProperties": {
+    "description": "Tooltip for the edit button on an entity detail card"
+  },
+  "unknownViewState": "Unknown View State",
+  "@unknownViewState": {
+    "description": "Fallback text shown when the active tab does not match any known view"
+  },
+  "webSimulationNotice": "Running on Web: Database file read/write is simulated in-memory.",
+  "@webSimulationNotice": {
+    "description": "Information message shown at the bottom of the sidebar when running on Web platform"
+  },
+  "webhookSimulatorSubtitle": "Manually dispatch structured repository events to test the cognitive loop.",
+  "@webhookSimulatorSubtitle": {
+    "description": "Subtitle text for the Webhook Simulator page"
+  },
+  "webhookSuccessTitle": "WEBHOOK SUCCESS",
+  "@webhookSuccessTitle": {
+    "description": "Title shown on a successful webhook dispatch response card"
+  },
+  "worldModelExplorerSubtitle": "Browse collections and inspect, edit, or delete dynamic world model entities.",
+  "@worldModelExplorerSubtitle": {
+    "description": "Subtitle text for the World Model Explorer page"
+  }
+}
