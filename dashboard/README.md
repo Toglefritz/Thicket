@@ -1,57 +1,24 @@
-# Dashboard
+# Thicket Dashboard
 
-A Flutter application built with MVC (Model-View-Controller) architecture following Splendid coding standards.
+A Flutter developer console for inspecting and interacting with the Thicket system. It provides visibility into the world model, lets you dispatch simulated webhook events to the agent runtime, and records an audit trail of agent actions.
 
-## Architecture
+## Role in the Thicket Project
 
-This project follows a strict MVC pattern for all screens:
+Thicket is organized into three layers: a **World Model** for persistent entity storage, an **Agent Runtime** that observes events and updates the world model via Gemini, and an **Interface Layer** that exposes these capabilities to tooling.
 
-### Route (Entry Point)
-- Each screen has a `*_route.dart` file containing a `StatefulWidget`
-- The route's `createState()` method returns the corresponding controller
-- Routes are responsible only for defining the screen entry point
+The dashboard is the primary developer-facing interface. It connects to:
 
-### Controller (Business Logic)
-- Controllers extend `State<RouteWidget>` and handle all business logic
-- Controllers manage state and call `setState()` to trigger UI updates
-- All event handlers and data manipulation logic belongs in controllers
+- The **World Model** directly (reading and writing entity files on desktop, or using an in-memory simulation on web).
+- The **Agent Runtime** via HTTP, dispatching webhook events to the agent's `/events` endpoint and displaying the reasoning response.
 
-### View (Presentation)
-- Views are `StatelessWidget` classes that handle only UI presentation
-- Views receive the controller as a parameter for accessing state and methods
-- Views should be "dumb" and purely declarative
+This removes the need to manually craft `curl` commands or browse raw JSON files when developing or debugging the agent's cognitive loop.
 
-## Getting Started
+## Features
 
-1. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
+The dashboard currently provides three main capabilities, accessible via sidebar tabs:
 
-2. Run the application:
-   ```bash
-   flutter run
-   ```
+1. **Webhook Simulator** — Compose and dispatch structured events (GitHub push, Slack message, filesystem change) to the running agent server. Displays the raw agent response including reasoning output.
 
-## Project Structure
+2. **World Model Explorer** — Browse collections (beliefs, concepts, episodes, etc.) stored in the world model database. Inspect individual entity data, add new entities, edit existing ones, or delete them.
 
-```
-lib/
-├── main.dart                 # Application entry point
-└── screens/
-    └── home/
-        ├── home_route.dart      # Route definition
-        ├── home_controller.dart # Business logic and state
-        └── home_view.dart       # UI presentation
-```
-
-## Development Guidelines
-
-- Follow the MVC pattern for all new screens
-- Use `setState()` for state management
-- Extract reusable UI components into separate widget classes
-- Use `Padding` widgets for spacing, not `SizedBox`
-- Maintain 120-character line length
-- Document all public classes and methods
-
-For more detailed coding standards, refer to the project's analysis_options.yaml and linting configuration.
+3. **Audit Log Stream** — Reverse-chronological history of events dispatched and actions taken, useful for tracing agent behavior during development.
