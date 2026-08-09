@@ -1,0 +1,10 @@
+.git
+.gitignore
+.kiro
+.thicket
+.agents
+dashboard
+interface
+**/.dart_tool
+**/build
+**/.packages
