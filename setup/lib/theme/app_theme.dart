@@ -6,7 +6,7 @@ class _AppTheme {
   ///
   /// This amber color serves as the foundation for both light and dark themes, with Material 3 automatically
   /// generating complementary colors for various UI elements.
-  static const Color _seedColor = Colors.amber;
+  static const Color _seedColor = Color(0xFF8A9A5B);
 
   /// Light theme configuration for the application.
   static ThemeData get lightTheme {

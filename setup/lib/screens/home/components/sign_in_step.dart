@@ -14,9 +14,10 @@ class _SignInStep extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        Icon(
-          Icons.park_outlined,
-          size: 72,
+        Image.asset(
+          'assets/logo/thicket_logo.png',
+          width: 72,
+          height: 72,
           color: Theme.of(context).colorScheme.primary,
         ),
         Padding(
@@ -56,7 +57,7 @@ class _SignInStep extends StatelessWidget {
         if (state.error != null)
           Padding(
             padding: const EdgeInsets.only(top: Insets.medium),
-            child: Text(
+            child: SelectableText(
               context.l10n.errorGeneric(state.error!),
               style: TextStyle(color: Theme.of(context).colorScheme.error),
               textAlign: TextAlign.center,
