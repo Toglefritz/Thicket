@@ -1,0 +1,76 @@
+{
+  "appTitle": "Thicket Setup",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "welcomeHeading": "Set up Thicket",
+  "@welcomeHeading": {
+    "description": "Main heading on the sign-in step"
+  },
+  "welcomeDescription": "Thicket gives your AI agents a persistent world model. Sign in with your Google account to register a project.",
+  "@welcomeDescription": {
+    "description": "Description text on the sign-in step"
+  },
+  "buttonSignIn": "Sign in with Google",
+  "@buttonSignIn": {
+    "description": "Label for the Google sign-in button"
+  },
+  "signInWaiting": "Waiting for sign-in...",
+  "@signInWaiting": {
+    "description": "Status text shown while waiting for the OAuth redirect"
+  },
+  "nameProjectHeading": "Name your project",
+  "@nameProjectHeading": {
+    "description": "Heading on the project naming step"
+  },
+  "nameProjectDescription": "Give your project a name so you can identify it later.",
+  "@nameProjectDescription": {
+    "description": "Description on the project naming step"
+  },
+  "labelProjectName": "Project name",
+  "@labelProjectName": {
+    "description": "Label for the project name text field"
+  },
+  "buttonRegister": "Create project",
+  "@buttonRegister": {
+    "description": "Label for the button that registers the project"
+  },
+  "registeringStatus": "Creating your project...",
+  "@registeringStatus": {
+    "description": "Status text shown while registration is in progress"
+  },
+  "completeHeading": "You're all set",
+  "@completeHeading": {
+    "description": "Heading shown when setup is complete"
+  },
+  "completeDescription": "Your project is registered. The configuration has been saved to .thicket/project.json.",
+  "@completeDescription": {
+    "description": "Description shown when setup is complete"
+  },
+  "labelProjectId": "Project ID",
+  "@labelProjectId": {
+    "description": "Label for the project ID in the summary"
+  },
+  "labelAgentUrl": "Agent URL",
+  "@labelAgentUrl": {
+    "description": "Label for the agent endpoint URL in the summary"
+  },
+  "labelApiToken": "API Token",
+  "@labelApiToken": {
+    "description": "Label for the API token in the summary"
+  },
+  "buttonDone": "Done",
+  "@buttonDone": {
+    "description": "Label for the done button on the completion step"
+  },
+  "errorGeneric": "{error}",
+  "@errorGeneric": {
+    "description": "Generic error message display",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The error details"
+      }
+    }
+  }
+}
