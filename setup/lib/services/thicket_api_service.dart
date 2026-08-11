@@ -35,7 +35,7 @@ class ThicketApiService {
   ///
   /// Returns a [RegistrationResult] containing the project ID and API token.
   Future<RegistrationResult> registerProject(
-      {required String projectName}) async {
+      {required String projectName,}) async {
     final http.Response response = await http.post(
       Uri.parse('$_baseUrl/projects'),
       headers: <String, String>{
@@ -49,7 +49,7 @@ class ThicketApiService {
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception(
-          'Failed to register project: ${response.statusCode} ${response.body}');
+          'Failed to register project: ${response.statusCode} ${response.body}',);
     }
 
     final Map<String, dynamic> body =
@@ -60,7 +60,7 @@ class ThicketApiService {
 
     if (projectId == null || apiToken == null) {
       throw Exception(
-          'Unexpected response from server: missing projectId or apiToken');
+          'Unexpected response from server: missing projectId or apiToken',);
     }
 
     return RegistrationResult(

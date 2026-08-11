@@ -4,6 +4,8 @@
 ///
 /// This file serves as the application entry point and is responsible only for initializing and running the Flutter
 /// app.
+library;
+
 
 import 'package:flutter/material.dart';
 import 'app.dart';

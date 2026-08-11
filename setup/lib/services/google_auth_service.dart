@@ -62,7 +62,7 @@ class GoogleAuthService {
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.html
             ..write(
-                '<html><body><h2>Sign-in complete.</h2><p>You can close this window.</p></body></html>');
+                '<html><body><h2>Sign-in complete.</h2><p>You can close this window.</p></body></html>',);
           await request.response.close();
           codeCompleter.complete(code);
         } else {
@@ -70,7 +70,7 @@ class GoogleAuthService {
             ..statusCode = HttpStatus.badRequest
             ..headers.contentType = ContentType.html
             ..write(
-                '<html><body><h2>Sign-in failed.</h2><p>${error ?? "Unknown error"}</p></body></html>');
+                '<html><body><h2>Sign-in failed.</h2><p>${error ?? "Unknown error"}</p></body></html>',);
           await request.response.close();
           codeCompleter
               .completeError(Exception(error ?? 'Authorization was denied'));
@@ -99,7 +99,7 @@ class GoogleAuthService {
     final http.Response response = await http.post(
       Uri.parse('https://oauth2.googleapis.com/token'),
       headers: <String, String>{
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: <String, String>{
         'code': code,
@@ -112,7 +112,7 @@ class GoogleAuthService {
 
     if (response.statusCode != 200) {
       throw Exception(
-          'Token exchange failed: ${response.statusCode} ${response.body}');
+          'Token exchange failed: ${response.statusCode} ${response.body}',);
     }
 
     final Map<String, dynamic> tokenData =

@@ -13,7 +13,6 @@ class _AppTheme {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
         seedColor: _seedColor,
-        brightness: Brightness.light,
       ),
       useMaterial3: true,
     );

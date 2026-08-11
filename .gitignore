@@ -4,3 +4,4 @@
 .thicket/project.json
 /.kiro/steering
 setup/run_setup.command
+*.af~lock~

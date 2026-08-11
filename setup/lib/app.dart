@@ -5,9 +5,9 @@
 /// following MVC architecture patterns.
 library;
 
-import 'l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
+import 'l10n/app_localizations.dart';
 import 'screens/home/home_route.dart';
 
 part 'theme/app_theme.dart';
