@@ -435,7 +435,7 @@ Future<String> processEvent({
   required Map<String, dynamic> payload,
 }) async {
   final GenerativeModel model = GenerativeModel(
-    model: 'gemini-1.5-pro-latest',
+    model: 'gemini-3.5-flash',
     apiKey: apiKey,
     systemInstruction: Content.system(
         'You are Thicket Agent, an autonomous codebase learning assistant. '
