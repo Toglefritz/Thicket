@@ -1,0 +1,79 @@
+#!/bin/zsh
+#
+# Thicket Git Integration: post-commit hook
+#
+# Sends commit metadata to the Thicket agent so it can update the project's
+# world model with knowledge derived from the change.
+#
+# Installation:
+#   cp integrations/git/post-commit <your-project>/.git/hooks/post-commit
+#   chmod +x <your-project>/.git/hooks/post-commit
+#
+# Or symlink:
+#   ln -sf ../../../../integrations/git/post-commit <your-project>/.git/hooks/post-commit
+#
+# Requirements:
+#   - A .thicket/project.json file in the project root (created by the setup wizard)
+#   - curl available on PATH
+#   - The Thicket agent reachable at the agentUrl specified in project.json
+
+# Resolve the project root (where .thicket/project.json lives).
+PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [[ -z "$PROJECT_ROOT" ]]; then
+  exit 0
+fi
+
+CONFIG_FILE="$PROJECT_ROOT/.thicket/project.json"
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  # Project not registered with Thicket; silently skip.
+  exit 0
+fi
+
+# Parse the agent URL and project path from the config.
+AGENT_URL=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['agentUrl'])" "$CONFIG_FILE" 2>/dev/null)
+if [[ -z "$AGENT_URL" ]]; then
+  exit 0
+fi
+
+# Collect commit metadata.
+COMMIT_HASH=$(git rev-parse HEAD)
+COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+AUTHOR=$(git log -1 --pretty=format:'%an <%ae>')
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Collect changed files.
+ADDED=$(git diff-tree --no-commit-id --name-only -r --diff-filter=A HEAD | paste -sd ',' -)
+MODIFIED=$(git diff-tree --no-commit-id --name-only -r --diff-filter=M HEAD | paste -sd ',' -)
+DELETED=$(git diff-tree --no-commit-id --name-only -r --diff-filter=D HEAD | paste -sd ',' -)
+
+# Build the JSON payload.
+PAYLOAD=$(cat <<EOF
+{
+  "source": "git",
+  "eventType": "commit",
+  "projectPath": "$PROJECT_ROOT",
+  "payload": {
+    "ref": "refs/heads/$BRANCH",
+    "commits": [
+      {
+        "id": "$COMMIT_HASH",
+        "message": "$COMMIT_MESSAGE",
+        "author": "$AUTHOR",
+        "added": [$(echo "$ADDED" | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')],
+        "modified": [$(echo "$MODIFIED" | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')],
+        "deleted": [$(echo "$DELETED" | sed 's/,/","/g' | sed 's/^/"/' | sed 's/$/"/')
+        ]
+      }
+    ]
+  }
+}
+EOF
+)
+
+# Send the event to the Thicket agent in the background so it doesn't block the commit.
+curl -s -X POST "$AGENT_URL" \
+  -H "Content-Type: application/json" \
+  -d "$PAYLOAD" \
+  > /dev/null 2>&1 &
+
+exit 0
