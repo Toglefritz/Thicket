@@ -1,0 +1,3 @@
+[submodule "berry_collector"]
+	path = berry_collector
+	url = https://github.com/Toglefritz/berry_collector.git
