@@ -6,3 +6,4 @@
 setup/run_setup.command
 *.af~lock~
 setup/creds.command
+deploy.command
