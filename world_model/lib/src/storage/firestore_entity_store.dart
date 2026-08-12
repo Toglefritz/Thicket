@@ -33,11 +33,13 @@ class FirestoreEntityStore {
     required String thicketProjectId,
     String? apiKey,
     String? accessToken,
+    String databaseId = '(default)',
     http.Client? httpClient,
   }) : _gcpProjectId = gcpProjectId,
        _thicketProjectId = thicketProjectId,
        _apiKey = apiKey,
        _accessToken = accessToken,
+       _databaseId = databaseId,
        _client = httpClient ?? http.Client();
 
   /// The Google Cloud project ID that owns the Firestore database.
@@ -52,12 +54,15 @@ class FirestoreEntityStore {
   /// Optional OAuth2 access token for authenticated requests from service accounts or user credentials.
   final String? _accessToken;
 
+  /// The Firestore database ID. Defaults to `(default)` but can be set to a named database.
+  final String _databaseId;
+
   /// HTTP client used for all Firestore REST API calls.
   final http.Client _client;
 
   /// Base URL for the Firestore REST API targeting this project's database.
   String get _baseUrl =>
-      'https://firestore.googleapis.com/v1/projects/$_gcpProjectId/databases/(default)/documents';
+      'https://firestore.googleapis.com/v1/projects/$_gcpProjectId/databases/$_databaseId/documents';
 
   /// The document path prefix for this Thicket project's entities.
   String get _projectPrefix => 'thicket_projects/$_thicketProjectId';

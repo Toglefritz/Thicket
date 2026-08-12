@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
@@ -65,9 +66,10 @@ class StoreResolver {
 
   /// Creates a [FirestoreEntityStore] for projects using cloud storage.
   ///
-  /// Requires the `GCP_PROJECT_ID` environment variable (or the value from project.json) and either a
-  /// `GOOGLE_ACCESS_TOKEN` or `FIREBASE_API_KEY` environment variable for authentication.
-  static FirestoreEntityStore createFirestoreStore(ProjectIdentity identity) {
+  /// Requires the `GCP_PROJECT_ID` environment variable (or the value from project.json) for authentication.
+  /// On Cloud Run, automatically fetches an access token from the instance metadata server.
+  static Future<FirestoreEntityStore> createFirestoreStore(
+      ProjectIdentity identity) async {
     final String? gcpProjectId =
         identity.gcpProjectId ?? Platform.environment['GCP_PROJECT_ID'];
 
@@ -78,14 +80,21 @@ class StoreResolver {
       );
     }
 
-    final String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
+    String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
     final String? apiKey = Platform.environment['FIREBASE_API_KEY'];
+
+    // On Cloud Run, fetch an access token from the metadata server if none is explicitly provided.
+    if (accessToken == null && apiKey == null) {
+      accessToken = await _fetchMetadataAccessToken();
+    }
 
     return FirestoreEntityStore(
       gcpProjectId: gcpProjectId,
       thicketProjectId: identity.projectId,
       accessToken: accessToken,
       apiKey: apiKey,
+      databaseId: Platform.environment['FIRESTORE_DATABASE_ID'] ??
+          'thicket-world-model',
     );
   }
 
@@ -104,6 +113,30 @@ class StoreResolver {
 
     return EntityStore(
         storagePath: p.join(home, '.thicket', 'projects', identity.projectId));
+  }
+
+  /// Fetches an access token from the GCE instance metadata server.
+  ///
+  /// This is available on Cloud Run, Compute Engine, and other GCP managed compute. Returns null if the metadata
+  /// server is not reachable (e.g. running locally).
+  static Future<String?> _fetchMetadataAccessToken() async {
+    try {
+      final http.Response response = await http.get(
+        Uri.parse(
+          'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+        ),
+        headers: <String, String>{'Metadata-Flavor': 'Google'},
+      ).timeout(const Duration(seconds: 3));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        return body['access_token'] as String?;
+      }
+    } catch (_) {
+      // Not running on GCP infrastructure; return null.
+    }
+    return null;
   }
 }
 
@@ -208,7 +241,7 @@ Future<Map<String, dynamic>> handleRemember(Map<String, dynamic> args) async {
 
   if (identity.storageMode == StorageMode.cloud) {
     final FirestoreEntityStore store =
-        StoreResolver.createFirestoreStore(identity);
+        await StoreResolver.createFirestoreStore(identity);
 
     if (id != null && id.isNotEmpty) {
       entityId = id;
@@ -287,7 +320,7 @@ Future<Map<String, dynamic>> handleRecall(Map<String, dynamic> args) async {
 
   if (identity.storageMode == StorageMode.cloud) {
     final FirestoreEntityStore store =
-        StoreResolver.createFirestoreStore(identity);
+        await StoreResolver.createFirestoreStore(identity);
 
     if (id != null && id.isNotEmpty) {
       entityJson = await store.load(collection: collection, id: id);
@@ -352,7 +385,7 @@ Future<Map<String, dynamic>> handleForget(Map<String, dynamic> args) async {
 
   if (identity.storageMode == StorageMode.cloud) {
     final FirestoreEntityStore store =
-        StoreResolver.createFirestoreStore(identity);
+        await StoreResolver.createFirestoreStore(identity);
     success = await store.delete(collection: collection, id: id);
   } else {
     final EntityStore store =
@@ -502,14 +535,21 @@ Future<Response> handleProjectRegistration(Request request) async {
       );
     }
 
-    final String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
+    String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
     final String? apiKey = Platform.environment['FIREBASE_API_KEY'];
+
+    // On Cloud Run, fetch a token from the metadata server if none is explicitly set.
+    if (accessToken == null && apiKey == null) {
+      accessToken = await StoreResolver._fetchMetadataAccessToken();
+    }
 
     final FirestoreEntityStore store = FirestoreEntityStore(
       gcpProjectId: gcpProjectId,
       thicketProjectId: projectId,
       accessToken: accessToken,
       apiKey: apiKey,
+      databaseId: Platform.environment['FIRESTORE_DATABASE_ID'] ??
+          'thicket-world-model',
     );
 
     // Write a metadata entity to Firestore to initialize the project partition.
