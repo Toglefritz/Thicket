@@ -29,7 +29,7 @@ Future<String> processEvent({
       '5. Provide a concise summary of what you learned or updated in the world model.';
 
   final GenerateResponseHelper<dynamic> response = await ai.generate(
-    model: googleAI.gemini('gemini-2.5-flash'),
+    model: googleAI.gemini('gemini-3.5-flash'),
     prompt: prompt,
     system: 'You are Thicket Agent, an autonomous codebase learning assistant. '
         'Your goal is to build, maintain, and query a persistent world model '
