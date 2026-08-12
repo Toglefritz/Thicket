@@ -29,10 +29,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nameProjectDescription =>
-      'Give your project a name so you can identify it later.';
+      'Give your project a name and specify the directory where it lives.';
 
   @override
   String get labelProjectName => 'Project name';
+
+  @override
+  String get labelProjectPath => 'Project directory';
 
   @override
   String get buttonRegister => 'Create project';

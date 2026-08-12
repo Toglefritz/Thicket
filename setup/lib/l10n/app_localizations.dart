@@ -133,7 +133,7 @@ abstract class AppLocalizations {
   /// Description on the project naming step
   ///
   /// In en, this message translates to:
-  /// **'Give your project a name so you can identify it later.'**
+  /// **'Give your project a name and specify the directory where it lives.'**
   String get nameProjectDescription;
 
   /// Label for the project name text field
@@ -141,6 +141,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Project name'**
   String get labelProjectName;
+
+  /// Label for the project directory path text field
+  ///
+  /// In en, this message translates to:
+  /// **'Project directory'**
+  String get labelProjectPath;
 
   /// Label for the button that registers the project
   ///

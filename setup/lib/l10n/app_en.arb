@@ -23,13 +23,17 @@
   "@nameProjectHeading": {
     "description": "Heading on the project naming step"
   },
-  "nameProjectDescription": "Give your project a name so you can identify it later.",
+  "nameProjectDescription": "Give your project a name and specify the directory where it lives.",
   "@nameProjectDescription": {
     "description": "Description on the project naming step"
   },
   "labelProjectName": "Project name",
   "@labelProjectName": {
     "description": "Label for the project name text field"
+  },
+  "labelProjectPath": "Project directory",
+  "@labelProjectPath": {
+    "description": "Label for the project directory path text field"
   },
   "buttonRegister": "Create project",
   "@buttonRegister": {

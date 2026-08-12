@@ -1,12 +1,12 @@
 part of '../home_view.dart';
 
-/// The project naming step with a text field and submit button.
+/// The project configuration step with fields for project name and directory path.
 ///
-/// Collects the project name from the user before registering it with the Thicket backend.
+/// Collects the project name and the directory where `.thicket/project.json` will be written.
 class _NameProjectStep extends StatelessWidget {
   const _NameProjectStep({required this.state});
 
-  /// Controller for accessing the text controller and triggering registration.
+  /// Controller for accessing text controllers and triggering registration.
   final HomeController state;
 
   @override
@@ -33,6 +33,18 @@ class _NameProjectStep extends StatelessWidget {
             controller: state.projectNameController,
             decoration: InputDecoration(
               labelText: context.l10n.labelProjectName,
+              border: const OutlineInputBorder(),
+            ),
+            textInputAction: TextInputAction.next,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: Insets.medium),
+          child: TextField(
+            controller: state.projectPathController,
+            decoration: InputDecoration(
+              labelText: context.l10n.labelProjectPath,
+              hintText: '/path/to/your/project',
               border: const OutlineInputBorder(),
             ),
             textInputAction: TextInputAction.done,

@@ -48,6 +48,9 @@ class HomeController extends State<HomeRoute> {
   /// Text controller for the project name input.
   final TextEditingController projectNameController = TextEditingController();
 
+  /// Text controller for the project directory path input.
+  final TextEditingController projectPathController = TextEditingController();
+
   /// The registration result returned by the backend.
   RegistrationResult? _registrationResult;
 
@@ -98,13 +101,28 @@ class HomeController extends State<HomeRoute> {
 
   /// Registers the project with the Thicket backend and writes the local config.
   ///
-  /// Validates that the project name is not empty, sends the registration request, then writes
-  /// `.thicket/project.json` with the returned project ID and API token.
+  /// Validates that the project name and directory are not empty, sends the registration request, then writes
+  /// `.thicket/project.json` in the specified directory.
   Future<void> registerProject() async {
     final String projectName = projectNameController.text.trim();
     if (projectName.isEmpty) {
       setState(() {
         _error = 'Please enter a project name.';
+      });
+      return;
+    }
+
+    final String projectPath = projectPathController.text.trim();
+    if (projectPath.isEmpty) {
+      setState(() {
+        _error = 'Please specify a project directory.';
+      });
+      return;
+    }
+
+    if (!Directory(projectPath).existsSync()) {
+      setState(() {
+        _error = 'Directory does not exist: $projectPath';
       });
       return;
     }
@@ -122,8 +140,8 @@ class HomeController extends State<HomeRoute> {
           await api.registerProject(projectName: projectName);
       _registrationResult = result;
 
-      // Write the local config file.
-      _writeProjectConfig(result, projectName);
+      // Write the local config file to the specified directory.
+      _writeProjectConfig(result, projectName, projectPath);
 
       setState(() {
         _isRegistering = false;
@@ -145,9 +163,9 @@ class HomeController extends State<HomeRoute> {
     });
   }
 
-  /// Writes `.thicket/project.json` in the current working directory.
-  void _writeProjectConfig(RegistrationResult result, String projectName) {
-    final String projectPath = Directory.current.path;
+  /// Writes `.thicket/project.json` in the specified project directory.
+  void _writeProjectConfig(
+      RegistrationResult result, String projectName, String projectPath) {
     final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
 
     if (!thicketDir.existsSync()) {
@@ -171,6 +189,7 @@ class HomeController extends State<HomeRoute> {
   @override
   void dispose() {
     projectNameController.dispose();
+    projectPathController.dispose();
     super.dispose();
   }
 
