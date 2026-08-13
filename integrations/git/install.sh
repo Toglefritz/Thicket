@@ -13,12 +13,15 @@ if [[ -z "$1" ]]; then
 fi
 
 PROJECT_DIR="$1"
-HOOKS_DIR="$PROJECT_DIR/.git/hooks"
 
-if [[ ! -d "$PROJECT_DIR/.git" ]]; then
+if [[ ! -d "$PROJECT_DIR/.git" && ! -f "$PROJECT_DIR/.git" ]]; then
   echo "Error: $PROJECT_DIR is not a git repository."
   exit 1
 fi
+
+# Resolve the actual git hooks directory (handles both regular repos and submodules).
+HOOKS_DIR=$(git -C "$PROJECT_DIR" rev-parse --git-path hooks)
+
 
 if [[ ! -f "$PROJECT_DIR/.thicket/project.json" ]]; then
   echo "Warning: No .thicket/project.json found. Run the setup wizard first."
