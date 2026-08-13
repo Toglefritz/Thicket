@@ -28,14 +28,14 @@ void main(List<String> args) async {
 
       final String? source = body['source'] as String?;
       final String? eventType = body['eventType'] as String?;
-      final String? projectPath = body['projectPath'] as String?;
+      final String? thicketProjectId = body['thicketProjectId'] as String?;
       final Map<String, dynamic> payload =
           body['payload'] as Map<String, dynamic>? ?? <String, dynamic>{};
 
-      if (source == null || eventType == null || projectPath == null) {
+      if (source == null || eventType == null || thicketProjectId == null) {
         return Response.badRequest(
             body:
-                'Missing required parameters: source, eventType, projectPath');
+                'Missing required parameters: source, eventType, thicketProjectId');
       }
 
       final String apiKey = Platform.environment['GEMINI_API_KEY'] ?? '';
@@ -49,13 +49,14 @@ void main(List<String> args) async {
           ai: ai,
           source: source,
           eventType: eventType,
-          projectPath: projectPath,
+          thicketProjectId: thicketProjectId,
           payload: payload,
         );
 
         return Response.ok(
           jsonEncode(
-              <String, dynamic>{'status': 'success', 'summary': summary}),
+            <String, dynamic>{'status': 'success', 'summary': summary},
+          ),
           headers: <String, String>{'content-type': 'application/json'},
         );
       } catch (e) {
@@ -68,6 +69,6 @@ void main(List<String> args) async {
 
   final HttpServer server =
       await io.serve(router.call, InternetAddress.anyIPv4, port);
-      
+
   print('Thicket Agent listening on port ${server.port}');
 }
