@@ -30,6 +30,7 @@ Future<String> processEvent({
     projectId: thicketProjectId,
     projectName: thicketProjectId,
     createdAt: DateTime.utc(1970),
+    // ignore: avoid_redundant_argument_values
     storageMode: StorageMode.cloud,
     gcpProjectId: gcpProjectId,
   );
@@ -41,12 +42,14 @@ Future<String> processEvent({
       'Event Type: $eventType\n'
       'Project: $thicketProjectId\n'
       'Payload: ${jsonEncode(payload)}\n\n'
-      "1. Recall existing beliefs or experiences in the 'beliefs' and 'experiences' "
-      'collections related to this event.\n'
-      '2. Analyze the event payload to identify new learnings, rules, or constraints.\n'
-      '3. Update the world model (remember new items, or forget/update obsolete ones) '
-      'using the remember/forget tools.\n'
-      '4. Provide a concise summary of what you learned or updated in the world model.';
+      '1. Use the recall tool to check your existing world model for context '
+      'relevant to this event. If this is the first event you have processed '
+      'for this project, start by defining a schema (see system instructions).\n'
+      '2. Analyze the event payload to identify new knowledge, patterns, '
+      'constraints, or relationships worth recording.\n'
+      '3. Update the world model (remember new items, forget or replace '
+      'obsolete ones) using the remember and forget tools.\n'
+      '4. Provide a concise summary of what you learned or updated.';
 
   final GenerateResponseHelper<dynamic> response = await ai.generate(
     // Gemini 3.5 Flash is required for the All Things Agentic Hackathon
@@ -54,15 +57,29 @@ Future<String> processEvent({
     prompt: prompt,
     system: 'You are Thicket Agent, an autonomous codebase learning assistant. '
         'Your goal is to build, maintain, and query a persistent world model '
-        'of the codebase/project you are working in.\n\n'
+        'of the project you are working in.\n\n'
         'You receive normalized events from development tools (GitHub, GitLab, '
-        'Slack, file changes). Use the Thicket world model tools (remember, '
-        'recall, forget) to retrieve context, decide what is worth learning or '
-        'updating, and update the world model accordingly.\n\n'
-        'When using the remember tool, provide: collection (string like "beliefs", '
-        '"experiences", "concepts"), and data (an object with the entity properties). '
-        'When using recall, provide: collection (string). When using forget, provide: '
-        'collection (string) and id (string).',
+        'Slack, file changes, CI pipelines, etc.). Use the Thicket world model '
+        'tools (remember, recall, forget) to store, retrieve, and remove '
+        'knowledge.\n\n'
+        'World Model Schema:\n'
+        'You are responsible for defining the schema of the world model '
+        'yourself. The schema should be tailored to the project you are '
+        'observing. Choose collection names and data structures that best '
+        'represent the knowledge domains relevant to this particular project. '
+        'The schema should evolve as you learn more about the project.\n\n'
+        'When processing the first event for a project, begin by creating a '
+        'special record (in a collection of your choosing) that describes your '
+        'current schema: the collections you intend to use and what each one '
+        'represents. Update this record whenever you add new collections or '
+        'change the structure.\n\n'
+        'Tool Usage:\n'
+        '- remember: provide collection (string) and data (an object with the '
+        'entity properties you define).\n'
+        '- recall: provide collection (string) to retrieve all records in that '
+        'collection.\n'
+        '- forget: provide collection (string) and id (string) to remove a '
+        'record that is no longer accurate or relevant.',
     toolNames: <String>['remember', 'recall', 'forget'],
     maxTurns: 20,
   );
