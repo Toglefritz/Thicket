@@ -7,22 +7,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:setup/extensions/build_context_extensions.dart';
 
+import '../../models/ide_type.dart';
 import '../../services/thicket_api_service.dart';
 import '../../theme/insets.dart';
 import 'home_controller.dart';
 
 part 'components/complete_step.dart';
 part 'components/copyable_row.dart';
+part 'components/ide_option_card.dart';
 part 'components/name_project_step.dart';
 part 'components/registering_step.dart';
+part 'components/select_ide_step.dart';
 part 'components/sign_in_step.dart';
 part 'components/step_content.dart';
 part 'components/summary_row.dart';
 
 /// View widget for the setup wizard screen.
 ///
-/// Renders the appropriate step content based on the controller's current state. The flow is linear: sign in, name
-/// the project, wait for registration, see the result.
+/// Renders the appropriate step content based on the controller's current state. The flow is linear: sign in, name the
+/// project, wait for registration, see the result.
 class HomeView extends StatelessWidget {
   /// Creates the home view with the required controller.
   const HomeView(this.state, {super.key});

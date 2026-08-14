@@ -166,10 +166,10 @@ abstract class AppLocalizations {
   /// **'You\'re all set'**
   String get completeHeading;
 
-  /// Description shown when setup is complete
+  /// Description shown when setup is complete, after both registration and MCP installation
   ///
   /// In en, this message translates to:
-  /// **'Your project is registered. The configuration has been saved to .thicket/project.json.'**
+  /// **'Your project is registered and your IDE is configured. Thicket is ready to use.'**
   String get completeDescription;
 
   /// Label for the project ID in the summary
@@ -201,6 +201,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{error}'**
   String errorGeneric(String error);
+
+  /// Heading on the IDE selection step
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your IDE'**
+  String get selectIdeHeading;
+
+  /// Description on the IDE selection step explaining why an IDE must be chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Select the IDE you use so Thicket can install its MCP server configuration.'**
+  String get selectIdeDescription;
+
+  /// Label for the IDE name in the completion summary
+  ///
+  /// In en, this message translates to:
+  /// **'IDE'**
+  String get labelIde;
+
+  /// Label for the MCP configuration file path in the completion summary
+  ///
+  /// In en, this message translates to:
+  /// **'MCP config'**
+  String get labelMcpConfig;
 }
 
 class _AppLocalizationsDelegate

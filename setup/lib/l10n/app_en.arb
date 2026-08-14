@@ -47,9 +47,9 @@
   "@completeHeading": {
     "description": "Heading shown when setup is complete"
   },
-  "completeDescription": "Your project is registered. The configuration has been saved to .thicket/project.json.",
+  "completeDescription": "Your project is registered and your IDE is configured. Thicket is ready to use.",
   "@completeDescription": {
-    "description": "Description shown when setup is complete"
+    "description": "Description shown when setup is complete, after both registration and MCP installation"
   },
   "labelProjectId": "Project ID",
   "@labelProjectId": {
@@ -76,5 +76,21 @@
         "description": "The error details"
       }
     }
+  },
+  "selectIdeHeading": "Choose your IDE",
+  "@selectIdeHeading": {
+    "description": "Heading on the IDE selection step"
+  },
+  "selectIdeDescription": "Select the IDE you use so Thicket can install its MCP server configuration.",
+  "@selectIdeDescription": {
+    "description": "Description on the IDE selection step explaining why an IDE must be chosen"
+  },
+  "labelIde": "IDE",
+  "@labelIde": {
+    "description": "Label for the IDE name in the completion summary"
+  },
+  "labelMcpConfig": "MCP config",
+  "@labelMcpConfig": {
+    "description": "Label for the MCP configuration file path in the completion summary"
   }
 }

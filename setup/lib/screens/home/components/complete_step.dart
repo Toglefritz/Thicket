@@ -1,10 +1,13 @@
 part of '../home_view.dart';
 
-/// The completion step showing the project ID, API token, and agent URL after successful registration.
+/// The completion step showing project registration details and MCP configuration status.
+///
+/// Displays the project ID, API token, agent URL, and the path to the MCP configuration file that was written for the
+/// selected IDE.
 class _CompleteStep extends StatelessWidget {
   const _CompleteStep({required this.state});
 
-  /// Controller for accessing the registration result.
+  /// Controller for accessing the registration result and MCP config path.
   final HomeController state;
 
   @override
@@ -60,6 +63,31 @@ class _CompleteStep extends StatelessWidget {
                       child: _CopyableRow(
                         label: context.l10n.labelApiToken,
                         value: result.apiToken,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (state.selectedIde != null && state.mcpConfigPath != null)
+          Padding(
+            padding: const EdgeInsets.only(top: Insets.medium),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(Insets.medium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    _SummaryRow(
+                      label: context.l10n.labelIde,
+                      value: state.selectedIde!.displayName,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: Insets.small),
+                      child: _SummaryRow(
+                        label: context.l10n.labelMcpConfig,
+                        value: state.mcpConfigPath!,
                       ),
                     ),
                   ],

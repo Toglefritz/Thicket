@@ -48,7 +48,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get completeDescription =>
-      'Your project is registered. The configuration has been saved to .thicket/project.json.';
+      'Your project is registered and your IDE is configured. Thicket is ready to use.';
 
   @override
   String get labelProjectId => 'Project ID';
@@ -66,4 +66,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String errorGeneric(String error) {
     return '$error';
   }
+
+  @override
+  String get selectIdeHeading => 'Choose your IDE';
+
+  @override
+  String get selectIdeDescription =>
+      'Select the IDE you use so Thicket can install its MCP server configuration.';
+
+  @override
+  String get labelIde => 'IDE';
+
+  @override
+  String get labelMcpConfig => 'MCP config';
 }

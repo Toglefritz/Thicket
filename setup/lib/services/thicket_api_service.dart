@@ -34,8 +34,9 @@ class ThicketApiService {
   /// the MCP server and webhooks use to authenticate future requests.
   ///
   /// Returns a [RegistrationResult] containing the project ID and API token.
-  Future<RegistrationResult> registerProject(
-      {required String projectName,}) async {
+  Future<RegistrationResult> registerProject({
+    required String projectName,
+  }) async {
     final http.Response response = await http.post(
       Uri.parse('$_baseUrl/projects'),
       headers: <String, String>{
@@ -49,18 +50,19 @@ class ThicketApiService {
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception(
-          'Failed to register project: ${response.statusCode} ${response.body}',);
+        'Failed to register project: ${response.statusCode} ${response.body}',
+      );
     }
 
-    final Map<String, dynamic> body =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
 
     final String? projectId = body['projectId'] as String?;
     final String? apiToken = body['apiToken'] as String?;
 
     if (projectId == null || apiToken == null) {
       throw Exception(
-          'Unexpected response from server: missing projectId or apiToken',);
+        'Unexpected response from server: missing projectId or apiToken',
+      );
     }
 
     return RegistrationResult(

@@ -11,14 +11,12 @@ import 'package:http/http.dart' as http;
 class GoogleAuthService {
   /// The OAuth2 client ID for the Thicket installer application.
   ///
-  /// This client ID is registered in the Thicket GCP project and configured for desktop (loopback) redirect URIs.
-  /// It does not grant access to any resources; it only enables the consent flow.
-  static const String _clientId =
-      String.fromEnvironment('GOOGLE_OAUTH_CLIENT_ID');
+  /// This client ID is registered in the Thicket GCP project and configured for desktop (loopback) redirect URIs. It
+  /// does not grant access to any resources; it only enables the consent flow.
+  static const String _clientId = String.fromEnvironment('GOOGLE_OAUTH_CLIENT_ID');
 
   /// The OAuth2 client secret for the Thicket installer application.
-  static const String _clientSecret =
-      String.fromEnvironment('GOOGLE_OAUTH_CLIENT_SECRET');
+  static const String _clientSecret = String.fromEnvironment('GOOGLE_OAUTH_CLIENT_SECRET');
 
   /// The port used for the local OAuth redirect server.
   static const int _redirectPort = 9876;
@@ -37,8 +35,7 @@ class GoogleAuthService {
   static Future<String> signIn() async {
     const String redirectUri = 'http://localhost:$_redirectPort/callback';
 
-    final Uri authUrl =
-        Uri.https('accounts.google.com', '/o/oauth2/v2/auth', <String, String>{
+    final Uri authUrl = Uri.https('accounts.google.com', '/o/oauth2/v2/auth', <String, String>{
       'client_id': _clientId,
       'redirect_uri': redirectUri,
       'response_type': 'code',
@@ -49,8 +46,7 @@ class GoogleAuthService {
 
     // Start the local redirect server before opening the browser.
     final Completer<String> codeCompleter = Completer<String>();
-    final HttpServer server =
-        await HttpServer.bind(InternetAddress.loopbackIPv4, _redirectPort);
+    final HttpServer server = await HttpServer.bind(InternetAddress.loopbackIPv4, _redirectPort);
 
     server.listen((HttpRequest request) async {
       if (request.uri.path == '/callback') {
@@ -62,7 +58,8 @@ class GoogleAuthService {
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.html
             ..write(
-                '<html><body><h2>Sign-in complete.</h2><p>You can close this window.</p></body></html>',);
+              '<html><body><h2>Sign-in complete.</h2><p>You can close this window.</p></body></html>',
+            );
           await request.response.close();
           codeCompleter.complete(code);
         } else {
@@ -70,10 +67,10 @@ class GoogleAuthService {
             ..statusCode = HttpStatus.badRequest
             ..headers.contentType = ContentType.html
             ..write(
-                '<html><body><h2>Sign-in failed.</h2><p>${error ?? "Unknown error"}</p></body></html>',);
+              '<html><body><h2>Sign-in failed.</h2><p>${error ?? "Unknown error"}</p></body></html>',
+            );
           await request.response.close();
-          codeCompleter
-              .completeError(Exception(error ?? 'Authorization was denied'));
+          codeCompleter.completeError(Exception(error ?? 'Authorization was denied'));
         }
       }
     });
@@ -83,8 +80,7 @@ class GoogleAuthService {
 
     try {
       // Wait for the authorization code (with a timeout).
-      final String code =
-          await codeCompleter.future.timeout(const Duration(minutes: 3));
+      final String code = await codeCompleter.future.timeout(const Duration(minutes: 3));
 
       // Exchange the code for an access token.
       final String accessToken = await _exchangeCode(code, redirectUri);
@@ -112,11 +108,11 @@ class GoogleAuthService {
 
     if (response.statusCode != 200) {
       throw Exception(
-          'Token exchange failed: ${response.statusCode} ${response.body}',);
+        'Token exchange failed: ${response.statusCode} ${response.body}',
+      );
     }
 
-    final Map<String, dynamic> tokenData =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> tokenData = jsonDecode(response.body) as Map<String, dynamic>;
     final String? accessToken = tokenData['access_token'] as String?;
 
     if (accessToken == null || accessToken.isEmpty) {

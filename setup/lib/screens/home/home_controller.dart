@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
+import '../../models/ide_type.dart';
 import '../../services/google_auth_service.dart';
+import '../../services/mcp_installer_service.dart';
 import '../../services/thicket_api_service.dart';
 import 'home_route.dart';
 import 'home_view.dart';
@@ -21,14 +23,18 @@ enum SetupStep {
   /// Registration in progress with the Thicket backend.
   registering,
 
+  /// User selects which IDE to configure with the Thicket MCP server.
+  selectIde,
+
   /// Registration complete; config written to disk.
   complete,
 }
 
 /// Controller for the setup wizard screen.
 ///
-/// Orchestrates a three-interaction flow: sign in with Google, name the project, then register it with the Thicket
-/// backend. On completion, writes `.thicket/project.json` locally so the MCP server and agent can locate the project.
+/// Orchestrates the project setup flow: sign in with Google, name the project, register it with the Thicket backend,
+/// select an IDE for MCP integration, and install the MCP server configuration. On completion, both
+/// `.thicket/project.json` and the IDE's MCP config are written to disk.
 class HomeController extends State<HomeRoute> {
   /// The current wizard step.
   SetupStep _currentStep = SetupStep.signIn;
@@ -54,6 +60,13 @@ class HomeController extends State<HomeRoute> {
   /// The registration result returned by the backend.
   RegistrationResult? _registrationResult;
 
+  /// The IDE selected by the user for MCP configuration.
+  IdeType? _selectedIde;
+
+  /// The absolute path to the MCP config file that was written, shown on the completion step so the user knows where it
+  /// landed.
+  String? _mcpConfigPath;
+
   // MARK: Getters
 
   /// The current wizard step.
@@ -71,12 +84,18 @@ class HomeController extends State<HomeRoute> {
   /// The registration result after successful project creation.
   RegistrationResult? get registrationResult => _registrationResult;
 
+  /// The IDE the user selected for MCP integration, or null if not yet chosen.
+  IdeType? get selectedIde => _selectedIde;
+
+  /// The absolute path to the MCP config that was written, or null if the IDE selection step has not completed.
+  String? get mcpConfigPath => _mcpConfigPath;
+
   // MARK: Actions
 
   /// Initiates the Google OAuth2 sign-in flow.
   ///
-  /// Opens the system browser to the Google consent page and starts a local HTTP server to receive the redirect.
-  /// On success, advances to the project naming step.
+  /// Opens the system browser to the Google consent page and starts a local HTTP server to receive the redirect. On
+  /// success, advances to the project naming step.
   Future<void> signIn() async {
     setState(() {
       _isSigningIn = true;
@@ -134,10 +153,8 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api =
-          ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result =
-          await api.registerProject(projectName: projectName);
+      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result = await api.registerProject(projectName: projectName);
       _registrationResult = result;
 
       // Write the local config file to the specified directory.
@@ -145,12 +162,43 @@ class HomeController extends State<HomeRoute> {
 
       setState(() {
         _isRegistering = false;
-        _currentStep = SetupStep.complete;
+        _currentStep = SetupStep.selectIde;
       });
     } catch (e) {
       setState(() {
         _isRegistering = false;
         _currentStep = SetupStep.nameProject;
+        _error = e.toString();
+      });
+    }
+  }
+
+  /// Installs the Thicket MCP server configuration for the selected IDE.
+  ///
+  /// Writes the MCP config file in the project directory at the path expected by [ide]. Uses the Thicket repo location
+  /// (derived from this app's own executable path) to construct the server launch command.
+  void installMcpServer(IdeType ide) {
+    final String projectPath = projectPathController.text.trim();
+
+    // Resolve the Thicket repository root. The setup app lives at <thicket>/setup, so we go one level up from the setup
+    // package directory. Platform.script points to the running Dart file within the setup package.
+    final String thicketRoot = p.dirname(p.dirname(Platform.script.toFilePath()));
+
+    try {
+      final String configPath = McpInstallerService.install(
+        ide: ide,
+        projectPath: projectPath,
+        thicketRootPath: thicketRoot,
+      );
+
+      setState(() {
+        _selectedIde = ide;
+        _mcpConfigPath = configPath;
+        _error = null;
+        _currentStep = SetupStep.complete;
+      });
+    } catch (e) {
+      setState(() {
         _error = e.toString();
       });
     }
@@ -164,8 +212,7 @@ class HomeController extends State<HomeRoute> {
   }
 
   /// Writes `.thicket/project.json` in the specified project directory.
-  void _writeProjectConfig(
-      RegistrationResult result, String projectName, String projectPath) {
+  void _writeProjectConfig(RegistrationResult result, String projectName, String projectPath) {
     final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
 
     if (!thicketDir.existsSync()) {
@@ -182,8 +229,7 @@ class HomeController extends State<HomeRoute> {
     };
 
     final File configFile = File(p.join(thicketDir.path, 'project.json'));
-    configFile
-        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(config));
+    configFile.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(config));
   }
 
   @override
