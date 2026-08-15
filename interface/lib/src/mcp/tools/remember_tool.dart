@@ -8,17 +8,22 @@ import 'project_resolver.dart';
 /// Required arguments:
 /// - `projectPath`: absolute path to the project root
 /// - `collection`: target collection name
-/// - `data`: JSON object containing the entity properties
+/// - `data`: JSON object containing the entity properties (must include a `summary` field)
 ///
 /// Optional arguments:
 /// - `id`: unique identifier. If provided, updates existing entity or creates it. If omitted, generates a new ID.
+///
+/// The `data` object must contain a `summary` field: a short natural-language description of what this entity
+/// represents. This field is used by the search system to find relevant entries without loading every document.
 McpTool rememberTool() {
   return McpTool(
     name: 'remember',
     description:
         'Saves or updates a JSON entity in a specified collection in the project world model. '
         'If an ID is provided, updates the existing entity or creates it if absent. '
-        'If no ID is provided, generates a new unique ID and saves the entity.',
+        'If no ID is provided, generates a new unique ID and saves the entity. '
+        'The data object MUST include a "summary" field containing a short natural-language '
+        'description of what this entity represents. This enables search across the world model.',
     inputSchema: <String, dynamic>{
       'type': 'object',
       'properties': <String, Map<String, String>>{
@@ -28,8 +33,7 @@ McpTool rememberTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description':
-              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description': 'The name of the collection to store the entity in.',
         },
         'id': <String, String>{
           'type': 'string',
@@ -39,7 +43,8 @@ McpTool rememberTool() {
         'data': <String, String>{
           'type': 'object',
           'description':
-              'The flexible JSON payload containing the entity properties.',
+              'The flexible JSON payload containing the entity properties. '
+              'Must include a "summary" field with a short natural-language description of this entity.',
         },
       },
       'required': <String>['projectPath', 'collection', 'data'],
@@ -50,6 +55,15 @@ McpTool rememberTool() {
       final String? id = arguments['id'] as String?;
       final Map<String, dynamic> data =
           arguments['data'] as Map<String, dynamic>;
+
+      // Validate that the data payload includes a summary field.
+      final String? summary = data['summary'] as String?;
+      if (summary == null || summary.trim().isEmpty) {
+        throw ArgumentError(
+          'The "data" object must include a non-empty "summary" field. '
+          'This field is required for search indexing.',
+        );
+      }
 
       // Resolve the project identity and select the appropriate storage backend.
       final ProjectIdentity identity = ProjectResolver.readIdentity(
