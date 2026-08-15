@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 
 import '../../models/ide_type.dart';
 import '../../services/google_auth_service.dart';
+import '../../services/hook_installer_service.dart';
 import '../../services/mcp_installer_service.dart';
 import '../../services/thicket_api_service.dart';
 import 'home_route.dart';
@@ -153,8 +154,10 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result = await api.registerProject(projectName: projectName);
+      final ThicketApiService api =
+          ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result =
+          await api.registerProject(projectName: projectName);
       _registrationResult = result;
 
       // Write the local config file to the specified directory.
@@ -173,22 +176,29 @@ class HomeController extends State<HomeRoute> {
     }
   }
 
-  /// Installs the Thicket MCP server configuration for the selected IDE.
+  /// Installs the Thicket MCP server configuration and agent hooks for the selected IDE.
   ///
-  /// Writes the MCP config file in the project directory at the path expected by [ide]. Uses the Thicket repo location
-  /// (derived from this app's own executable path) to construct the server launch command.
+  /// Writes the MCP config file in the project directory at the path expected by [ide], then installs hooks that prompt
+  /// the agent to recall context on prompt submission and record knowledge after completing a task. Uses the Thicket
+  /// repo location (derived from this app's own executable path) to construct the server launch command.
   void installMcpServer(IdeType ide) {
     final String projectPath = projectPathController.text.trim();
 
     // Resolve the Thicket repository root. The setup app lives at <thicket>/setup, so we go one level up from the setup
     // package directory. Platform.script points to the running Dart file within the setup package.
-    final String thicketRoot = p.dirname(p.dirname(Platform.script.toFilePath()));
+    final String thicketRoot =
+        p.dirname(p.dirname(Platform.script.toFilePath()));
 
     try {
       final String configPath = McpInstallerService.install(
         ide: ide,
         projectPath: projectPath,
         thicketRootPath: thicketRoot,
+      );
+
+      HookInstallerService.install(
+        ide: ide,
+        projectPath: projectPath,
       );
 
       setState(() {
@@ -212,7 +222,8 @@ class HomeController extends State<HomeRoute> {
   }
 
   /// Writes `.thicket/project.json` in the specified project directory.
-  void _writeProjectConfig(RegistrationResult result, String projectName, String projectPath) {
+  void _writeProjectConfig(
+      RegistrationResult result, String projectName, String projectPath) {
     final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
 
     if (!thicketDir.existsSync()) {
@@ -229,7 +240,8 @@ class HomeController extends State<HomeRoute> {
     };
 
     final File configFile = File(p.join(thicketDir.path, 'project.json'));
-    configFile.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(config));
+    configFile
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(config));
   }
 
   @override

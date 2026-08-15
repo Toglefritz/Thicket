@@ -3,7 +3,7 @@
 /// Each value corresponds to a specific IDE and its MCP configuration format and file location. The order of values
 /// reflects the preferred presentation order in the setup wizard (Antigravity first as the hackathon's primary IDE).
 enum IdeType {
-  /// The Antigravity IDE.
+  /// Google Antigravity IDE.
   antigravity(
     displayName: 'Antigravity',
     configRelativePath: '.antigravity/mcp.json',
@@ -13,12 +13,6 @@ enum IdeType {
   kiro(
     displayName: 'Kiro',
     configRelativePath: '.kiro/settings/mcp.json',
-  ),
-
-  /// Cursor IDE, an AI-first code editor with MCP support.
-  cursor(
-    displayName: 'Cursor',
-    configRelativePath: '.cursor/mcp.json',
   );
 
   const IdeType({
