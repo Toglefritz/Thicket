@@ -17,6 +17,8 @@ class _StepContent extends StatelessWidget {
         return _SignInStep(state: state);
       case SetupStep.nameProject:
         return _NameProjectStep(state: state);
+      case SetupStep.joinProject:
+        return _JoinProjectStep(state: state);
       case SetupStep.registering:
         return const _RegisteringStep();
       case SetupStep.selectIde:

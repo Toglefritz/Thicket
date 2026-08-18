@@ -76,4 +76,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelMcpConfig => 'MCP config';
+
+  @override
+  String get joinProjectHeading => 'Existing project found';
+
+  @override
+  String get joinProjectDescription =>
+      'This directory already has a Thicket project configured. Join it to get your own API credentials.';
+
+  @override
+  String get buttonJoinProject => 'Join project';
+
+  @override
+  String get buttonStartOver => 'Start over';
+
+  @override
+  String get joiningStatus => 'Joining project...';
 }

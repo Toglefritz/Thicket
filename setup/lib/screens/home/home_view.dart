@@ -13,6 +13,7 @@ import 'home_controller.dart';
 
 part 'components/complete_step.dart';
 part 'components/ide_option_card.dart';
+part 'components/join_project_step.dart';
 part 'components/name_project_step.dart';
 part 'components/registering_step.dart';
 part 'components/select_ide_step.dart';

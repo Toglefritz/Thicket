@@ -194,6 +194,32 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to: **'MCP config'**
   String get labelMcpConfig;
+
+  /// Heading shown when an existing Thicket project is detected in the directory
+  ///
+  /// In en, this message translates to: **'Existing project found'**
+  String get joinProjectHeading;
+
+  /// Description explaining the join flow when a project.json already exists
+  ///
+  /// In en, this message translates to: **'This directory already has a Thicket project configured. Join it to get your
+  /// own API credentials.'**
+  String get joinProjectDescription;
+
+  /// Label for the button that joins an existing project
+  ///
+  /// In en, this message translates to: **'Join project'**
+  String get buttonJoinProject;
+
+  /// Label for the button that resets the wizard to create a new project instead
+  ///
+  /// In en, this message translates to: **'Start over'**
+  String get buttonStartOver;
+
+  /// Status text shown while the join request is in progress
+  ///
+  /// In en, this message translates to: **'Joining project...'**
+  String get joiningStatus;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

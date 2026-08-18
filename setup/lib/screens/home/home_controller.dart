@@ -21,7 +21,10 @@ enum SetupStep {
   /// User names their project before registration.
   nameProject,
 
-  /// Registration in progress with the Thicket backend.
+  /// An existing project was detected; user confirms joining it.
+  joinProject,
+
+  /// Registration (or join) in progress with the Thicket backend.
   registering,
 
   /// User selects which IDE to configure with the Thicket MCP server.
@@ -33,9 +36,8 @@ enum SetupStep {
 
 /// Controller for the setup wizard screen.
 ///
-/// Orchestrates the project setup flow: sign in with Google, name the project, register it with the Thicket backend,
-/// select an IDE for MCP integration, and install the MCP server configuration. On completion, both
-/// `.thicket/project.json` and the IDE's MCP config are written to disk.
+/// Orchestrates the project setup flow: sign in with Google, name the project (or join an existing one), register it
+/// with the Thicket backend, select an IDE for MCP integration, and install the MCP server configuration.
 class HomeController extends State<HomeRoute> {
   /// The current wizard step.
   SetupStep _currentStep = SetupStep.signIn;
@@ -68,6 +70,9 @@ class HomeController extends State<HomeRoute> {
   /// landed.
   String? _mcpConfigPath;
 
+  /// The existing project configuration loaded from `.thicket/project.json` when joining.
+  Map<String, dynamic>? _existingProjectConfig;
+
   // MARK: Getters
 
   /// The current wizard step.
@@ -90,6 +95,9 @@ class HomeController extends State<HomeRoute> {
 
   /// The absolute path to the MCP config that was written, or null if the IDE selection step has not completed.
   String? get mcpConfigPath => _mcpConfigPath;
+
+  /// The existing project configuration, available during the join flow.
+  Map<String, dynamic>? get existingProjectConfig => _existingProjectConfig;
 
   // MARK: Actions
 
@@ -147,6 +155,24 @@ class HomeController extends State<HomeRoute> {
       return;
     }
 
+    // Check if an existing Thicket project is already configured in this directory.
+    final File existingConfig = File(
+      p.join(projectPath, '.thicket', 'project.json'),
+    );
+    if (existingConfig.existsSync()) {
+      try {
+        final String content = existingConfig.readAsStringSync();
+        _existingProjectConfig = jsonDecode(content) as Map<String, dynamic>;
+        setState(() {
+          _error = null;
+          _currentStep = SetupStep.joinProject;
+        });
+        return;
+      } catch (_) {
+        // If the file is malformed, proceed with new registration.
+      }
+    }
+
     setState(() {
       _isRegistering = true;
       _error = null;
@@ -169,6 +195,48 @@ class HomeController extends State<HomeRoute> {
       setState(() {
         _isRegistering = false;
         _currentStep = SetupStep.nameProject;
+        _error = e.toString();
+      });
+    }
+  }
+
+  /// Joins an existing Thicket project by requesting a new API token from the backend.
+  ///
+  /// Uses the project ID from the existing `.thicket/project.json` to authenticate with the backend and obtain a fresh
+  /// token. Only writes `credentials.json`; the existing `project.json` is left untouched.
+  Future<void> joinExistingProject() async {
+    final String projectPath = projectPathController.text.trim();
+    final String? projectId = _existingProjectConfig?['projectId'] as String?;
+
+    if (projectId == null || projectId.isEmpty) {
+      setState(() {
+        _error = 'Invalid project configuration: missing projectId.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isRegistering = true;
+      _error = null;
+      _currentStep = SetupStep.registering;
+    });
+
+    try {
+      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result = await api.joinProject(projectId: projectId);
+      _registrationResult = result;
+
+      // Only write credentials — project.json already exists.
+      _writeCredentials(result.apiToken, projectPath);
+
+      setState(() {
+        _isRegistering = false;
+        _currentStep = SetupStep.selectIde;
+      });
+    } catch (e) {
+      setState(() {
+        _isRegistering = false;
+        _currentStep = SetupStep.joinProject;
         _error = e.toString();
       });
     }
@@ -226,6 +294,7 @@ class HomeController extends State<HomeRoute> {
       _registrationResult = null;
       _selectedIde = null;
       _mcpConfigPath = null;
+      _existingProjectConfig = null;
       projectNameController.clear();
       projectPathController.clear();
     });
@@ -267,9 +336,20 @@ class HomeController extends State<HomeRoute> {
       const JsonEncoder.withIndent('  ').convert(projectConfig),
     );
 
-    // Write the sensitive credentials separately.
+    // Write credentials and update .gitignore.
+    _writeCredentials(result.apiToken, projectPath);
+  }
+
+  /// Writes `.thicket/credentials.json` with the given API token and ensures it is gitignored.
+  void _writeCredentials(String apiToken, String projectPath) {
+    final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
+
+    if (!thicketDir.existsSync()) {
+      thicketDir.createSync(recursive: true);
+    }
+
     final Map<String, dynamic> credentials = <String, dynamic>{
-      'apiToken': result.apiToken,
+      'apiToken': apiToken,
     };
 
     final File credentialsFile = File(p.join(thicketDir.path, 'credentials.json'));
@@ -277,7 +357,6 @@ class HomeController extends State<HomeRoute> {
       const JsonEncoder.withIndent('  ').convert(credentials),
     );
 
-    // Ensure credentials.json is listed in the project's .gitignore.
     _ensureGitignore(projectPath);
   }
 

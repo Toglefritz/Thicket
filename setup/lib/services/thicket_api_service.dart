@@ -71,6 +71,49 @@ class ThicketApiService {
       agentUrl: body['agentUrl'] as String? ?? _baseUrl,
     );
   }
+
+  /// Joins an existing project by requesting a new API token from the Thicket backend.
+  ///
+  /// The backend verifies the project exists and issues a fresh token for this collaborator.
+  ///
+  /// Returns a [RegistrationResult] containing the project ID and new API token.
+  Future<RegistrationResult> joinProject({
+    required String projectId,
+  }) async {
+    final http.Response response = await http.post(
+      Uri.parse('$_baseUrl/projects/join'),
+      headers: <String, String>{
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'projectId': projectId,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception(
+        'Failed to join project: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
+
+    final String? returnedProjectId = body['projectId'] as String?;
+    final String? apiToken = body['apiToken'] as String?;
+
+    if (returnedProjectId == null || apiToken == null) {
+      throw Exception(
+        'Unexpected response from server: missing projectId or apiToken',
+      );
+    }
+
+    return RegistrationResult(
+      projectId: returnedProjectId,
+      apiToken: apiToken,
+      agentUrl: body['agentUrl'] as String? ?? _baseUrl,
+    );
+  }
 }
 
 /// The result of registering a project with the Thicket backend.
