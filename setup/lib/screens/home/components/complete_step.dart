@@ -58,13 +58,6 @@ class _CompleteStep extends StatelessWidget {
                         value: result.agentUrl,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: Insets.small),
-                      child: _CopyableRow(
-                        label: context.l10n.labelApiToken,
-                        value: result.apiToken,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -98,7 +91,7 @@ class _CompleteStep extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: Insets.xLarge),
           child: FilledButton(
-            onPressed: () => unawaited(Navigator.of(context).maybePop()),
+            onPressed: state.reset,
             child: Text(context.l10n.buttonDone),
           ),
         ),

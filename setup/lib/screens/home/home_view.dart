@@ -38,7 +38,7 @@ class HomeView extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: 640),
           child: Padding(
             padding: const EdgeInsets.all(Insets.large),
             child: _StepContent(state: state),

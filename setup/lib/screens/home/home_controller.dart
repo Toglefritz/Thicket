@@ -154,8 +154,10 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result = await api.registerProject(projectName: projectName);
+      final ThicketApiService api =
+          ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result =
+          await api.registerProject(projectName: projectName);
       _registrationResult = result;
 
       // Write the local config file to the specified directory.
@@ -184,7 +186,8 @@ class HomeController extends State<HomeRoute> {
 
     // Resolve the Thicket repository root. The setup app lives at <thicket>/setup, so we go one level up from the setup
     // package directory. Platform.script points to the running Dart file within the setup package.
-    final String thicketRoot = p.dirname(p.dirname(Platform.script.toFilePath()));
+    final String thicketRoot =
+        p.dirname(p.dirname(Platform.script.toFilePath()));
 
     try {
       final String configPath = McpInstallerService.install(
@@ -211,6 +214,24 @@ class HomeController extends State<HomeRoute> {
     }
   }
 
+  /// Resets the wizard back to the initial sign-in step.
+  ///
+  /// Clears all state accumulated during the flow so the user can start fresh.
+  void reset() {
+    setState(() {
+      _currentStep = SetupStep.signIn;
+      _error = null;
+      _accessToken = null;
+      _isSigningIn = false;
+      _isRegistering = false;
+      _registrationResult = null;
+      _selectedIde = null;
+      _mcpConfigPath = null;
+      projectNameController.clear();
+      projectPathController.clear();
+    });
+  }
+
   /// Resets the error state so the user can try the current step again.
   void clearError() {
     setState(() {
@@ -219,7 +240,8 @@ class HomeController extends State<HomeRoute> {
   }
 
   /// Writes `.thicket/project.json` in the specified project directory.
-  void _writeProjectConfig(RegistrationResult result, String projectName, String projectPath) {
+  void _writeProjectConfig(
+      RegistrationResult result, String projectName, String projectPath) {
     final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
 
     if (!thicketDir.existsSync()) {
@@ -236,7 +258,8 @@ class HomeController extends State<HomeRoute> {
     };
 
     final File configFile = File(p.join(thicketDir.path, 'project.json'));
-    configFile.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(config));
+    configFile
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(config));
   }
 
   @override
