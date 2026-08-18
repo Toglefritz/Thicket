@@ -19,23 +19,35 @@ class HookInstallerService {
   const HookInstallerService._();
 
   /// The prompt injected when the user submits a message, reminding the agent to recall relevant context.
-  static const String _recallPrompt = 'Before responding, consider whether the Thicket world model contains '
-      'context relevant to this request. If so, use the search or recall tools '
-      'from the Thicket MCP server to retrieve it. Use the project path of the '
-      'current workspace as the projectPath argument.\n\n'
-      'When you retrieve a relevant entity from the world model, mention it in '
-      'your response to the user. Briefly describe what you found and how it is '
-      'informing your approach. This makes the value of the world model visible '
-      'to the user.';
+  static const String _recallPrompt =
+      'Before responding, search the Thicket world model for knowledge relevant '
+      'to this request. Use the search tool from the Thicket MCP server with '
+      'the current workspace path as the projectPath argument.\n\n'
+      'Look for lessons, patterns, architectural decisions, or constraints that '
+      'previous sessions discovered about this codebase. When you find something '
+      'relevant, briefly mention what you found and how it informs your approach.';
 
   /// The prompt injected after a task completes, reminding the agent to record what it learned.
-  static const String _recordPrompt = 'You have just completed a task. Consider whether anything you learned, '
-      'decided, or observed during this task is worth recording in the Thicket '
-      'world model for future reference. This could include architectural '
-      'decisions, patterns discovered, constraints encountered, or other '
-      'project knowledge. If so, use the remember tool from the Thicket MCP '
-      'server to store it. Use the project path of the current workspace as '
-      'the projectPath argument.';
+  static const String _recordPrompt =
+      'You just completed a task. Reflect on whether you discovered something '
+      'that would help a future agent (or yourself) work more effectively in '
+      'this codebase. The goal is to form **durable knowledge**, not to log '
+      'what you did.\n\n'
+      'Good knowledge entries answer questions like:\n'
+      '- "How does [X system] actually work?" (architecture insights)\n'
+      '- "Why is [Y] done this way?" (rationale behind decisions)\n'
+      '- "What should you watch out for when changing [Z]?" (constraints, gotchas)\n'
+      '- "What pattern does this codebase follow for [W]?" (conventions)\n\n'
+      'Do NOT record:\n'
+      '- Simple task completions ("I added a button to the screen")\n'
+      '- Mechanical changes that are obvious from reading the code\n'
+      '- Information that is already captured in code comments or docs\n\n'
+      'If you did learn something genuinely reusable, use the remember tool '
+      'from the Thicket MCP server. Store it in an appropriate collection '
+      '(e.g., "architecture", "conventions", "decisions", "gotchas"). Write '
+      'the summary as a concise lesson, not a narrative of what you did. Use '
+      'the current workspace path as the projectPath argument.\n\n'
+      'If nothing worth preserving was learned, that is fine — do not force it.';
 
   /// Installs hooks for [ide] in the target [projectPath].
   ///
@@ -68,7 +80,9 @@ class HookInstallerService {
     Map<String, dynamic> hooks;
     if (hooksFile.existsSync()) {
       final String existing = hooksFile.readAsStringSync();
-      hooks = existing.trim().isNotEmpty ? jsonDecode(existing) as Map<String, dynamic> : <String, dynamic>{};
+      hooks = existing.trim().isNotEmpty
+          ? jsonDecode(existing) as Map<String, dynamic>
+          : <String, dynamic>{};
     } else {
       hooks = <String, dynamic>{};
     }

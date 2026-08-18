@@ -19,11 +19,16 @@ McpTool rememberTool() {
   return McpTool(
     name: 'remember',
     description:
-        'Saves or updates a JSON entity in a specified collection in the project world model. '
+        'Stores a piece of durable knowledge about the project in the world model. '
+        'Use this to record lessons, patterns, architectural insights, constraints, '
+        'conventions, and decisions that would help a future agent work more effectively '
+        'in this codebase. Do NOT use this to log task completions or record what you did — '
+        'only record knowledge that transfers to future situations.\n\n'
         'If an ID is provided, updates the existing entity or creates it if absent. '
-        'If no ID is provided, generates a new unique ID and saves the entity. '
-        'The data object MUST include a "summary" field containing a short natural-language '
-        'description of what this entity represents. This enables search across the world model.',
+        'If no ID is provided, generates a new unique ID. '
+        'The data object MUST include a "summary" field containing a short lesson-style '
+        'description (e.g., "The routing layer uses a custom middleware chain because..." '
+        'rather than "I added a route for the users endpoint").',
     inputSchema: <String, dynamic>{
       'type': 'object',
       'properties': <String, Map<String, String>>{
@@ -33,11 +38,14 @@ McpTool rememberTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description': 'The name of the collection to store the entity in.',
+          'description':
+              'The knowledge category to store this in (e.g., "architecture", "conventions", '
+              '"decisions", "gotchas", "dependencies", "workflows").',
         },
         'id': <String, String>{
           'type': 'string',
-          'description': 'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
+          'description':
+              'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
         },
         'data': <String, String>{
           'type': 'object',
@@ -52,7 +60,8 @@ McpTool rememberTool() {
       final String projectPath = arguments['projectPath'] as String;
       final String collection = arguments['collection'] as String;
       final String? id = arguments['id'] as String?;
-      final Map<String, dynamic> data = arguments['data'] as Map<String, dynamic>;
+      final Map<String, dynamic> data =
+          arguments['data'] as Map<String, dynamic>;
 
       // Validate that the data payload includes a summary field.
       final String? summary = data['summary'] as String?;
