@@ -11,7 +11,9 @@ class ProjectResolver {
   /// Safely resolves the user's home directory across different operating systems.
   static String getHomeDirectory() {
     if (Platform.isWindows) {
-      return Platform.environment['USERPROFILE'] ?? Platform.environment['APPDATA'] ?? '';
+      return Platform.environment['USERPROFILE'] ??
+          Platform.environment['APPDATA'] ??
+          '';
     }
     return Platform.environment['HOME'] ?? '';
   }
@@ -44,7 +46,8 @@ class ProjectResolver {
       );
     }
 
-    final Map<String, dynamic> json = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+    final Map<String, dynamic> json =
+        jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
     return ProjectIdentity.fromJson(json);
   }
 
@@ -75,11 +78,14 @@ class ProjectResolver {
 
   /// Creates a [FirestoreEntityStore] for projects using cloud storage.
   ///
-  /// Reads the GCP project ID from the identity file and credentials from environment variables.
+  /// Reads the GCP project ID from the identity file and credentials from environment variables. Uses the
+  /// `thicket-world-model` named database (matching the backend's Firestore instance) unless overridden by the
+  /// `FIRESTORE_DATABASE_ID` environment variable.
   ///
   /// Throws [StateError] if the required GCP project ID is missing.
   static FirestoreEntityStore createFirestoreStore(ProjectIdentity identity) {
-    final String? gcpProjectId = identity.gcpProjectId ?? Platform.environment['GCP_PROJECT_ID'];
+    final String? gcpProjectId =
+        identity.gcpProjectId ?? Platform.environment['GCP_PROJECT_ID'];
 
     if (gcpProjectId == null || gcpProjectId.isEmpty) {
       throw StateError(
@@ -96,6 +102,9 @@ class ProjectResolver {
       thicketProjectId: identity.projectId,
       accessToken: accessToken,
       apiKey: apiKey,
+      databaseId:
+          Platform.environment['FIRESTORE_DATABASE_ID'] ??
+          'thicket-world-model',
     );
   }
 }

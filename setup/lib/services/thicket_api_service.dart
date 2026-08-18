@@ -54,7 +54,8 @@ class ThicketApiService {
       );
     }
 
-    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> body =
+        jsonDecode(response.body) as Map<String, dynamic>;
 
     final String? projectId = body['projectId'] as String?;
     final String? apiToken = body['apiToken'] as String?;
@@ -69,6 +70,7 @@ class ThicketApiService {
       projectId: projectId,
       apiToken: apiToken,
       agentUrl: body['agentUrl'] as String? ?? _baseUrl,
+      gcpProjectId: body['gcpProjectId'] as String?,
     );
   }
 
@@ -97,7 +99,8 @@ class ThicketApiService {
       );
     }
 
-    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> body =
+        jsonDecode(response.body) as Map<String, dynamic>;
 
     final String? returnedProjectId = body['projectId'] as String?;
     final String? apiToken = body['apiToken'] as String?;
@@ -112,6 +115,7 @@ class ThicketApiService {
       projectId: returnedProjectId,
       apiToken: apiToken,
       agentUrl: body['agentUrl'] as String? ?? _baseUrl,
+      gcpProjectId: body['gcpProjectId'] as String?,
     );
   }
 }
@@ -123,6 +127,7 @@ class RegistrationResult {
     required this.projectId,
     required this.apiToken,
     required this.agentUrl,
+    this.gcpProjectId,
   });
 
   /// The unique Thicket project ID assigned by the backend.
@@ -133,4 +138,9 @@ class RegistrationResult {
 
   /// The URL where webhooks should be sent for this project.
   final String agentUrl;
+
+  /// The Google Cloud project ID that owns the Firestore database.
+  ///
+  /// Used by the MCP server to connect to the correct Firestore instance.
+  final String? gcpProjectId;
 }

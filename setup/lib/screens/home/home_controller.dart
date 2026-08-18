@@ -180,8 +180,10 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result = await api.registerProject(projectName: projectName);
+      final ThicketApiService api =
+          ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result =
+          await api.registerProject(projectName: projectName);
       _registrationResult = result;
 
       // Write the local config file to the specified directory.
@@ -222,8 +224,10 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result = await api.joinProject(projectId: projectId);
+      final ThicketApiService api =
+          ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result =
+          await api.joinProject(projectId: projectId);
       _registrationResult = result;
 
       // Only write credentials — project.json already exists.
@@ -329,6 +333,7 @@ class HomeController extends State<HomeRoute> {
       'createdAt': DateTime.now().toUtc().toIso8601String(),
       'storageMode': 'cloud',
       'agentUrl': result.agentUrl,
+      if (result.gcpProjectId != null) 'gcpProjectId': result.gcpProjectId,
     };
 
     final File projectFile = File(p.join(thicketDir.path, 'project.json'));
@@ -352,7 +357,8 @@ class HomeController extends State<HomeRoute> {
       'apiToken': apiToken,
     };
 
-    final File credentialsFile = File(p.join(thicketDir.path, 'credentials.json'));
+    final File credentialsFile =
+        File(p.join(thicketDir.path, 'credentials.json'));
     credentialsFile.writeAsStringSync(
       const JsonEncoder.withIndent('  ').convert(credentials),
     );

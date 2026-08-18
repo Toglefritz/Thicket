@@ -13,11 +13,13 @@ import 'store_resolver.dart';
 Future<Response> handleProjectRegistration(Request request) async {
   try {
     final String payloadString = await request.readAsString();
-    final Map<String, dynamic> body = jsonDecode(payloadString) as Map<String, dynamic>;
+    final Map<String, dynamic> body =
+        jsonDecode(payloadString) as Map<String, dynamic>;
 
     final String? projectName = body['projectName'] as String?;
     if (projectName == null || projectName.isEmpty) {
-      return Response.badRequest(body: 'Missing required parameter: projectName');
+      return Response.badRequest(
+          body: 'Missing required parameter: projectName');
     }
 
     final IdGenerator generator = IdGenerator();
@@ -26,7 +28,8 @@ Future<Response> handleProjectRegistration(Request request) async {
 
     final String gcpProjectId = Platform.environment['GCP_PROJECT_ID'] ?? '';
     if (gcpProjectId.isEmpty) {
-      return Response.internalServerError(body: 'GCP_PROJECT_ID environment variable is not set');
+      return Response.internalServerError(
+          body: 'GCP_PROJECT_ID environment variable is not set');
     }
 
     String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
@@ -41,7 +44,8 @@ Future<Response> handleProjectRegistration(Request request) async {
       thicketProjectId: projectId,
       accessToken: accessToken,
       apiKey: apiKey,
-      databaseId: Platform.environment['FIRESTORE_DATABASE_ID'] ?? 'thicket-world-model',
+      databaseId: Platform.environment['FIRESTORE_DATABASE_ID'] ??
+          'thicket-world-model',
     );
 
     final DateTime now = DateTime.now().toUtc();
@@ -61,10 +65,17 @@ Future<Response> handleProjectRegistration(Request request) async {
     final String host = request.requestedUri.host;
     final int port = request.requestedUri.port;
     final String scheme = request.requestedUri.scheme;
-    final String agentUrl = port == 443 || port == 80 ? '$scheme://$host/events' : '$scheme://$host:$port/events';
+    final String agentUrl = port == 443 || port == 80
+        ? '$scheme://$host/events'
+        : '$scheme://$host:$port/events';
 
     return Response.ok(
-      jsonEncode(<String, dynamic>{'projectId': projectId, 'apiToken': apiToken, 'agentUrl': agentUrl}),
+      jsonEncode(<String, dynamic>{
+        'projectId': projectId,
+        'apiToken': apiToken,
+        'agentUrl': agentUrl,
+        'gcpProjectId': gcpProjectId,
+      }),
       headers: <String, String>{'content-type': 'application/json'},
     );
   } catch (e) {

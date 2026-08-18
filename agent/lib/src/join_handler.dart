@@ -77,6 +77,7 @@ Future<Response> handleProjectJoin(Request request) async {
         'projectId': projectId,
         'apiToken': newApiToken,
         'agentUrl': agentUrl,
+        'gcpProjectId': gcpProjectId,
       }),
       headers: <String, String>{'content-type': 'application/json'},
     );
