@@ -4,9 +4,11 @@
 /// reflects the preferred presentation order in the setup wizard (Antigravity first as the hackathon's primary IDE).
 enum IdeType {
   /// Google Antigravity IDE.
+  ///
+  /// Workspace-level MCP config lives at `.agents/mcp_config.json` relative to the project root.
   antigravity(
     displayName: 'Antigravity',
-    configRelativePath: '.antigravity/mcp.json',
+    configRelativePath: '.agents/mcp_config.json',
   ),
 
   /// Amazon Kiro IDE, based on VS Code with MCP support.
