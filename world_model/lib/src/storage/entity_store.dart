@@ -13,8 +13,7 @@ class EntityStore {
   /// Creates a store rooted at the given directory path.
   ///
   /// The directory does not need to exist yet; it will be created on the first write operation.
-  EntityStore({required String storagePath})
-    : _storageRoot = Directory(storagePath);
+  EntityStore({required String storagePath}) : _storageRoot = Directory(storagePath);
 
   /// The root directory for this project's world model storage.
   ///

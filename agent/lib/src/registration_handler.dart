@@ -61,8 +61,7 @@ Future<Response> handleProjectRegistration(Request request) async {
     final String host = request.requestedUri.host;
     final int port = request.requestedUri.port;
     final String scheme = request.requestedUri.scheme;
-    final String agentUrl =
-        port == 443 || port == 80 ? '$scheme://$host/events' : '$scheme://$host:$port/events';
+    final String agentUrl = port == 443 || port == 80 ? '$scheme://$host/events' : '$scheme://$host:$port/events';
 
     return Response.ok(
       jsonEncode(<String, dynamic>{'projectId': projectId, 'apiToken': apiToken, 'agentUrl': agentUrl}),

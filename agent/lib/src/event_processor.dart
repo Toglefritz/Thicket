@@ -10,8 +10,8 @@ import 'store_resolver.dart';
 
 /// Processes a webhook event using Genkit with Gemini and the registered tools.
 ///
-/// The [thicketProjectId] identifies which project's world model to read from and write to. This value comes from
-/// the webhook payload (sent by the client, which reads it from its local `.thicket/project.json`). The GCP project ID
+/// The [thicketProjectId] identifies which project's world model to read from and write to. This value comes from the
+/// webhook payload (sent by the client, which reads it from its local `.thicket/project.json`). The GCP project ID
 /// comes from the server's environment since all projects share a single Firestore instance.
 Future<String> processEvent({
   required Genkit ai,
@@ -22,8 +22,7 @@ Future<String> processEvent({
 }) async {
   final String gcpProjectId = Platform.environment['GCP_PROJECT_ID'] ?? '';
   if (gcpProjectId.isEmpty) {
-    throw StateError(
-        'GCP_PROJECT_ID environment variable must be set on the server.');
+    throw StateError('GCP_PROJECT_ID environment variable must be set on the server.');
   }
 
   final ProjectIdentity identity = ProjectIdentity(

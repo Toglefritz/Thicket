@@ -6,10 +6,9 @@ import 'package:thicket/thicket.dart';
 
 /// Saves or updates an entity in the world model using the provided [FirestoreEntityStore].
 ///
-/// If an `id` is provided and the entity already exists, it is updated (preserving `createdAt`). If the entity does
-/// not exist or no `id` is given, a new entity is created.
-Future<String> handleRemember(
-    Map<String, dynamic> args, FirestoreEntityStore store) async {
+/// If an `id` is provided and the entity already exists, it is updated (preserving `createdAt`). If the entity does not
+/// exist or no `id` is given, a new entity is created.
+Future<String> handleRemember(Map<String, dynamic> args, FirestoreEntityStore store) async {
   final String collection = args['collection'] as String;
   final String? id = args['id'] as String?;
   final Map<String, dynamic> data = args['data'] as Map<String, dynamic>;
@@ -20,64 +19,48 @@ Future<String> handleRemember(
 
   if (id != null && id.isNotEmpty) {
     entityId = id;
-    final Map<String, dynamic>? existing =
-        await store.load(collection: collection, id: entityId);
+    final Map<String, dynamic>? existing = await store.load(collection: collection, id: entityId);
     if (existing != null) {
       final WorldModelEntity original = WorldModelEntity.fromJson(existing);
-      entity = WorldModelEntity(
-          id: entityId,
-          createdAt: original.createdAt,
-          updatedAt: now,
-          data: data);
+      entity = WorldModelEntity(id: entityId, createdAt: original.createdAt, updatedAt: now, data: data);
       await store.update(collection: collection, entity: entity);
     } else {
-      entity = WorldModelEntity(
-          id: entityId, createdAt: now, updatedAt: now, data: data);
+      entity = WorldModelEntity(id: entityId, createdAt: now, updatedAt: now, data: data);
       await store.save(collection: collection, entity: entity);
     }
   } else {
     entityId = IdGenerator().generateShort();
-    entity = WorldModelEntity(
-        id: entityId, createdAt: now, updatedAt: now, data: data);
+    entity = WorldModelEntity(id: entityId, createdAt: now, updatedAt: now, data: data);
     await store.save(collection: collection, entity: entity);
   }
 
-  return jsonEncode(<String, dynamic>{
-    'status': 'saved',
-    'id': entityId,
-    'entity': entity.toJson()
-  });
+  return jsonEncode(<String, dynamic>{'status': 'saved', 'id': entityId, 'entity': entity.toJson()});
 }
 
 /// Retrieves entities from a collection in the world model using the provided [FirestoreEntityStore].
 ///
 /// If an `id` is provided, returns only that entity. Otherwise returns all entities in the collection sorted by
 /// creation time (newest first).
-Future<String> handleRecall(
-    Map<String, dynamic> args, FirestoreEntityStore store) async {
+Future<String> handleRecall(Map<String, dynamic> args, FirestoreEntityStore store) async {
   final String collection = args['collection'] as String;
   final String? id = args['id'] as String?;
 
   if (id != null && id.isNotEmpty) {
-    final Map<String, dynamic>? entityJson =
-        await store.load(collection: collection, id: id);
+    final Map<String, dynamic>? entityJson = await store.load(collection: collection, id: id);
     if (entityJson != null) {
-      return jsonEncode(<String, dynamic>{
-        'count': 1,
-        'entities': <Map<String, dynamic>>[entityJson]
-      });
+      return jsonEncode(
+        <String, dynamic>{
+          'count': 1,
+          'entities': <Map<String, dynamic>>[entityJson],
+        },
+      );
     }
-    return jsonEncode(
-        <String, dynamic>{'count': 0, 'entities': <Map<String, dynamic>>[]});
+    return jsonEncode(<String, dynamic>{'count': 0, 'entities': <Map<String, dynamic>>[]});
   }
 
-  final List<Map<String, dynamic>> allJson =
-      await store.listAll(collection: collection);
-  final List<WorldModelEntity> entities = allJson
-      .map(WorldModelEntity.fromJson)
-      .toList()
-    ..sort((WorldModelEntity a, WorldModelEntity b) =>
-        b.createdAt.compareTo(a.createdAt));
+  final List<Map<String, dynamic>> allJson = await store.listAll(collection: collection);
+  final List<WorldModelEntity> entities = allJson.map(WorldModelEntity.fromJson).toList()
+    ..sort((WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt));
   return jsonEncode(<String, dynamic>{
     'count': entities.length,
     'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
@@ -85,14 +68,12 @@ Future<String> handleRecall(
 }
 
 /// Deletes an entity from the world model using the provided [FirestoreEntityStore].
-Future<String> handleForget(
-    Map<String, dynamic> args, FirestoreEntityStore store) async {
+Future<String> handleForget(Map<String, dynamic> args, FirestoreEntityStore store) async {
   final String collection = args['collection'] as String;
   final String id = args['id'] as String;
 
   final bool success = await store.delete(collection: collection, id: id);
-  return jsonEncode(
-      <String, dynamic>{'status': success ? 'deleted' : 'not_found', 'id': id});
+  return jsonEncode(<String, dynamic>{'status': success ? 'deleted' : 'not_found', 'id': id});
 }
 
 /// Reads a file from the codebase.
@@ -105,10 +86,7 @@ Future<String> handleInvestigate(Map<String, dynamic> args) async {
 
   final File file = File(p.join(projectPath, relativePath));
   if (!file.existsSync()) {
-    return jsonEncode(<String, dynamic>{
-      'status': 'error',
-      'message': 'File not found: $relativePath'
-    });
+    return jsonEncode(<String, dynamic>{'status': 'error', 'message': 'File not found: $relativePath'});
   }
 
   final String content = await file.readAsString();

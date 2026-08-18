@@ -81,8 +81,8 @@ class StoreResolver {
 
   /// Fetches an access token from the GCE instance metadata server.
   ///
-  /// Available on Cloud Run, Compute Engine, and other GCP managed compute. Returns null if the metadata server is
-  /// not reachable (e.g. running locally).
+  /// Available on Cloud Run, Compute Engine, and other GCP managed compute. Returns null if the metadata server is not
+  /// reachable (e.g. running locally).
   static Future<String?> fetchMetadataAccessToken() async {
     try {
       final http.Response response = await http.get(

@@ -26,13 +26,11 @@ McpTool recallTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description':
-              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description': 'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
         'id': <String, String>{
           'type': 'string',
-          'description':
-              'Optional identifier of a specific entity to retrieve.',
+          'description': 'Optional identifier of a specific entity to retrieve.',
         },
       },
       'required': <String>['projectPath', 'collection'],
@@ -59,18 +57,13 @@ McpTool recallTool() {
           entityJson = await store.load(collection: collection, id: id);
         } else {
           allJson = await store.listAll(collection: collection);
-          final List<WorldModelEntity> entities = allJson
-              .map(WorldModelEntity.fromJson)
-              .toList();
+          final List<WorldModelEntity> entities = allJson.map(WorldModelEntity.fromJson).toList();
           entities.sort(
-            (WorldModelEntity a, WorldModelEntity b) =>
-                b.createdAt.compareTo(a.createdAt),
+            (WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt),
           );
           return <String, dynamic>{
             'count': entities.length,
-            'entities': entities
-                .map((WorldModelEntity e) => e.toJson())
-                .toList(),
+            'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
           };
         }
       } else {
@@ -87,18 +80,13 @@ McpTool recallTool() {
           entityJson = await store.load(collection: collection, id: id);
         } else {
           allJson = await store.listAll(collection: collection);
-          final List<WorldModelEntity> entities = allJson
-              .map(WorldModelEntity.fromJson)
-              .toList();
+          final List<WorldModelEntity> entities = allJson.map(WorldModelEntity.fromJson).toList();
           entities.sort(
-            (WorldModelEntity a, WorldModelEntity b) =>
-                b.createdAt.compareTo(a.createdAt),
+            (WorldModelEntity a, WorldModelEntity b) => b.createdAt.compareTo(a.createdAt),
           );
           return <String, dynamic>{
             'count': entities.length,
-            'entities': entities
-                .map((WorldModelEntity e) => e.toJson())
-                .toList(),
+            'entities': entities.map((WorldModelEntity e) => e.toJson()).toList(),
           };
         }
       }

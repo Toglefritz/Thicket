@@ -6,8 +6,7 @@ import 'project_resolver.dart';
 McpTool forgetTool() {
   return McpTool(
     name: 'forget',
-    description:
-        'Deletes a JSON entity from a specified collection in the project world model.',
+    description: 'Deletes a JSON entity from a specified collection in the project world model.',
     inputSchema: <String, dynamic>{
       'type': 'object',
       'properties': <String, Map<String, String>>{
@@ -17,8 +16,7 @@ McpTool forgetTool() {
         },
         'collection': <String, String>{
           'type': 'string',
-          'description':
-              'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
+          'description': 'The name of the collection (e.g., "experiences", "beliefs", "concepts").',
         },
         'id': <String, String>{
           'type': 'string',

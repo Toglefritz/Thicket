@@ -61,8 +61,7 @@ class FirestoreEntityStore {
   final http.Client _client;
 
   /// Base URL for the Firestore REST API targeting this project's database.
-  String get _baseUrl =>
-      'https://firestore.googleapis.com/v1/projects/$_gcpProjectId/databases/$_databaseId/documents';
+  String get _baseUrl => 'https://firestore.googleapis.com/v1/projects/$_gcpProjectId/databases/$_databaseId/documents';
 
   /// The document path prefix for this Thicket project's entities.
   String get _projectPrefix => 'thicket_projects/$_thicketProjectId';
@@ -86,8 +85,8 @@ class FirestoreEntityStore {
       );
     }
 
-    // Create the document using the patch method with the document ID in the URL.
-    // Firestore REST API uses PATCH to create or update documents at a specific path.
+    // Create the document using the patch method with the document ID in the URL. Firestore REST API uses PATCH to
+    // create or update documents at a specific path.
     final Map<String, dynamic> firestoreDoc = _entityToFirestoreDocument(
       entity,
     );
@@ -161,8 +160,7 @@ class FirestoreEntityStore {
       );
     }
 
-    final Map<String, dynamic> doc =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> doc = jsonDecode(response.body) as Map<String, dynamic>;
     return _firestoreDocumentToEntity(doc);
   }
 
@@ -205,8 +203,7 @@ class FirestoreEntityStore {
         );
       }
 
-      final Map<String, dynamic> body =
-          jsonDecode(response.body) as Map<String, dynamic>;
+      final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
       final List<dynamic>? documents = body['documents'] as List<dynamic>?;
 
       if (documents != null) {
@@ -243,17 +240,14 @@ class FirestoreEntityStore {
       );
     }
 
-    final Map<String, dynamic> body =
-        jsonDecode(response.body) as Map<String, dynamic>;
-    final List<dynamic>? collectionIds =
-        body['collectionIds'] as List<dynamic>?;
+    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
+    final List<dynamic>? collectionIds = body['collectionIds'] as List<dynamic>?;
 
     if (collectionIds == null) {
       return <String>[];
     }
 
-    final List<String> collections =
-        collectionIds.map((dynamic id) => id as String).toList()..sort();
+    final List<String> collections = collectionIds.map((dynamic id) => id as String).toList()..sort();
     return collections;
   }
 
@@ -346,8 +340,7 @@ class FirestoreEntityStore {
   Map<String, dynamic> _firestoreDocumentToEntity(
     Map<String, dynamic> document,
   ) {
-    final Map<String, dynamic> fields =
-        document['fields'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final Map<String, dynamic> fields = document['fields'] as Map<String, dynamic>? ?? <String, dynamic>{};
     final Map<String, dynamic> result = <String, dynamic>{};
 
     for (final MapEntry<String, dynamic> entry in fields.entries) {
@@ -417,19 +410,13 @@ class FirestoreEntityStore {
       return firestoreValue['booleanValue'] as bool;
     }
     if (firestoreValue.containsKey('arrayValue')) {
-      final Map<String, dynamic> arrayValue =
-          firestoreValue['arrayValue'] as Map<String, dynamic>;
-      final List<dynamic> values =
-          arrayValue['values'] as List<dynamic>? ?? <dynamic>[];
-      return values
-          .map((dynamic v) => _fromFirestoreValue(v as Map<String, dynamic>))
-          .toList();
+      final Map<String, dynamic> arrayValue = firestoreValue['arrayValue'] as Map<String, dynamic>;
+      final List<dynamic> values = arrayValue['values'] as List<dynamic>? ?? <dynamic>[];
+      return values.map((dynamic v) => _fromFirestoreValue(v as Map<String, dynamic>)).toList();
     }
     if (firestoreValue.containsKey('mapValue')) {
-      final Map<String, dynamic> mapValue =
-          firestoreValue['mapValue'] as Map<String, dynamic>;
-      final Map<String, dynamic> fields =
-          mapValue['fields'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final Map<String, dynamic> mapValue = firestoreValue['mapValue'] as Map<String, dynamic>;
+      final Map<String, dynamic> fields = mapValue['fields'] as Map<String, dynamic>? ?? <String, dynamic>{};
       final Map<String, dynamic> result = <String, dynamic>{};
       for (final MapEntry<String, dynamic> entry in fields.entries) {
         result[entry.key] = _fromFirestoreValue(

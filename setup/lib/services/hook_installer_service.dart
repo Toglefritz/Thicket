@@ -19,15 +19,13 @@ class HookInstallerService {
   const HookInstallerService._();
 
   /// The prompt injected when the user submits a message, reminding the agent to recall relevant context.
-  static const String _recallPrompt =
-      'Before responding, consider whether the Thicket world model contains '
+  static const String _recallPrompt = 'Before responding, consider whether the Thicket world model contains '
       'context relevant to this request. If so, use the recall tool from the '
       'Thicket MCP server to retrieve it. Use the project path of the current '
       'workspace as the projectPath argument.';
 
   /// The prompt injected after a task completes, reminding the agent to record what it learned.
-  static const String _recordPrompt =
-      'You have just completed a task. Consider whether anything you learned, '
+  static const String _recordPrompt = 'You have just completed a task. Consider whether anything you learned, '
       'decided, or observed during this task is worth recording in the Thicket '
       'world model for future reference. This could include architectural '
       'decisions, patterns discovered, constraints encountered, or other '
@@ -66,9 +64,7 @@ class HookInstallerService {
     Map<String, dynamic> hooks;
     if (hooksFile.existsSync()) {
       final String existing = hooksFile.readAsStringSync();
-      hooks = existing.trim().isNotEmpty
-          ? jsonDecode(existing) as Map<String, dynamic>
-          : <String, dynamic>{};
+      hooks = existing.trim().isNotEmpty ? jsonDecode(existing) as Map<String, dynamic> : <String, dynamic>{};
     } else {
       hooks = <String, dynamic>{};
     }
@@ -101,8 +97,7 @@ class HookInstallerService {
   /// Kiro stores each hook as a separate JSON file. The `agent` action type injects a static prompt into the model
   /// context when the trigger fires.
   static void _installKiroHooks(String projectPath) {
-    final Directory hooksDir =
-        Directory(p.join(projectPath, '.kiro', 'hooks'));
+    final Directory hooksDir = Directory(p.join(projectPath, '.kiro', 'hooks'));
     if (!hooksDir.existsSync()) {
       hooksDir.createSync(recursive: true);
     }
@@ -137,14 +132,12 @@ class HookInstallerService {
       ],
     };
 
-    final File recallFile =
-        File(p.join(hooksDir.path, 'thicket-recall.json'));
+    final File recallFile = File(p.join(hooksDir.path, 'thicket-recall.json'));
     recallFile.writeAsStringSync(
       const JsonEncoder.withIndent('  ').convert(recallHook),
     );
 
-    final File recordFile =
-        File(p.join(hooksDir.path, 'thicket-record.json'));
+    final File recordFile = File(p.join(hooksDir.path, 'thicket-record.json'));
     recordFile.writeAsStringSync(
       const JsonEncoder.withIndent('  ').convert(recordHook),
     );

@@ -28,8 +28,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nameProjectHeading => 'Name your project';
 
   @override
-  String get nameProjectDescription =>
-      'Give your project a name and specify the directory where it lives.';
+  String get nameProjectDescription => 'Give your project a name and specify the directory where it lives.';
 
   @override
   String get labelProjectName => 'Project name';
@@ -47,8 +46,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get completeHeading => 'You\'re all set';
 
   @override
-  String get completeDescription =>
-      'Your project is registered and your IDE is configured. Thicket is ready to use.';
+  String get completeDescription => 'Your project is registered and your IDE is configured. Thicket is ready to use.';
 
   @override
   String get labelProjectId => 'Project ID';
@@ -71,8 +69,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectIdeHeading => 'Choose your IDE';
 
   @override
-  String get selectIdeDescription =>
-      'Select the IDE you use so Thicket can install its MCP server configuration.';
+  String get selectIdeDescription => 'Select the IDE you use so Thicket can install its MCP server configuration.';
 
   @override
   String get labelIde => 'IDE';

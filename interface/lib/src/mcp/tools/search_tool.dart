@@ -42,8 +42,7 @@ McpTool searchTool() {
         },
         'query': <String, String>{
           'type': 'string',
-          'description':
-              'Natural-language search query to match against entity summaries.',
+          'description': 'Natural-language search query to match against entity summaries.',
         },
         'maxResults': <String, String>{
           'type': 'integer',
@@ -101,9 +100,7 @@ McpTool searchTool() {
         (_ScoredResult a, _ScoredResult b) => b.score.compareTo(a.score),
       );
 
-      final List<_ScoredResult> topResults = merged.length > maxResults
-          ? merged.sublist(0, maxResults)
-          : merged;
+      final List<_ScoredResult> topResults = merged.length > maxResults ? merged.sublist(0, maxResults) : merged;
 
       return <String, dynamic>{
         'count': topResults.length,
@@ -173,10 +170,7 @@ Future<List<_SearchCandidate>> _loadAllEntities(
     final EntityStore store = EntityStore(storagePath: storagePath);
 
     // Each subdirectory of the storage root is a collection.
-    final List<Directory> collectionDirs = storageRoot
-        .listSync()
-        .whereType<Directory>()
-        .toList();
+    final List<Directory> collectionDirs = storageRoot.listSync().whereType<Directory>().toList();
 
     for (final Directory dir in collectionDirs) {
       final String collection = dir.path.split(Platform.pathSeparator).last;
@@ -276,13 +270,10 @@ Future<List<_ScoredResult>> _embeddingSearch({
   }
 
   // Embed all candidate summaries in batch.
-  final List<String> summaries = candidates
-      .map((_SearchCandidate c) => c.summary)
-      .toList();
+  final List<String> summaries = candidates.map((_SearchCandidate c) => c.summary).toList();
   final List<List<double>> candidateEmbeddings = await service.embed(summaries);
 
-  if (candidateEmbeddings.isEmpty ||
-      candidateEmbeddings.length != candidates.length) {
+  if (candidateEmbeddings.isEmpty || candidateEmbeddings.length != candidates.length) {
     return <_ScoredResult>[];
   }
 
@@ -349,9 +340,7 @@ List<_ScoredResult> _mergeResults({
 
     if (embeddingResult != null) {
       // Both strategies found this entity; combine scores.
-      final double combinedScore =
-          (textResult.score * textWeight) +
-          (embeddingResult.score * embeddingWeight);
+      final double combinedScore = (textResult.score * textWeight) + (embeddingResult.score * embeddingWeight);
       merged[key] = _ScoredResult(
         collection: textResult.collection,
         id: textResult.id,

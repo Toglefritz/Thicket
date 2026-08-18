@@ -37,8 +37,7 @@ McpTool rememberTool() {
         },
         'id': <String, String>{
           'type': 'string',
-          'description':
-              'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
+          'description': 'Optional identifier of the entity to create or update. If omitted, a new ID is generated.',
         },
         'data': <String, String>{
           'type': 'object',
@@ -53,8 +52,7 @@ McpTool rememberTool() {
       final String projectPath = arguments['projectPath'] as String;
       final String collection = arguments['collection'] as String;
       final String? id = arguments['id'] as String?;
-      final Map<String, dynamic> data =
-          arguments['data'] as Map<String, dynamic>;
+      final Map<String, dynamic> data = arguments['data'] as Map<String, dynamic>;
 
       // Validate that the data payload includes a summary field.
       final String? summary = data['summary'] as String?;

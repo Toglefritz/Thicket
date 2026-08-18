@@ -23,8 +23,7 @@ class EmbeddingService {
   static const String _model = 'gemini-embedding-001';
 
   /// The batch endpoint URL template.
-  static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/$_model:batchEmbedContents';
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/$_model:batchEmbedContents';
 
   /// The API key for authenticating with the Gemini API.
   final String _apiKey;
@@ -110,14 +109,11 @@ class EmbeddingService {
         return <List<double>>[];
       }
 
-      final Map<String, dynamic> responseBody =
-          jsonDecode(response.body) as Map<String, dynamic>;
-      final List<dynamic> embeddings =
-          responseBody['embeddings'] as List<dynamic>;
+      final Map<String, dynamic> responseBody = jsonDecode(response.body) as Map<String, dynamic>;
+      final List<dynamic> embeddings = responseBody['embeddings'] as List<dynamic>;
 
       return embeddings.map((dynamic embedding) {
-        final Map<String, dynamic> embeddingMap =
-            embedding as Map<String, dynamic>;
+        final Map<String, dynamic> embeddingMap = embedding as Map<String, dynamic>;
         final List<dynamic> values = embeddingMap['values'] as List<dynamic>;
         return values.map((dynamic v) => (v as num).toDouble()).toList();
       }).toList();

@@ -11,9 +11,7 @@ class ProjectResolver {
   /// Safely resolves the user's home directory across different operating systems.
   static String getHomeDirectory() {
     if (Platform.isWindows) {
-      return Platform.environment['USERPROFILE'] ??
-          Platform.environment['APPDATA'] ??
-          '';
+      return Platform.environment['USERPROFILE'] ?? Platform.environment['APPDATA'] ?? '';
     }
     return Platform.environment['HOME'] ?? '';
   }
@@ -46,8 +44,7 @@ class ProjectResolver {
       );
     }
 
-    final Map<String, dynamic> json =
-        jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
+    final Map<String, dynamic> json = jsonDecode(identityFile.readAsStringSync()) as Map<String, dynamic>;
     return ProjectIdentity.fromJson(json);
   }
 
@@ -82,8 +79,7 @@ class ProjectResolver {
   ///
   /// Throws [StateError] if the required GCP project ID is missing.
   static FirestoreEntityStore createFirestoreStore(ProjectIdentity identity) {
-    final String? gcpProjectId =
-        identity.gcpProjectId ?? Platform.environment['GCP_PROJECT_ID'];
+    final String? gcpProjectId = identity.gcpProjectId ?? Platform.environment['GCP_PROJECT_ID'];
 
     if (gcpProjectId == null || gcpProjectId.isEmpty) {
       throw StateError(

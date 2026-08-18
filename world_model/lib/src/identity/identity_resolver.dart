@@ -15,8 +15,8 @@ import '../models/project/storage_mode.dart';
 class IdentityResolver {
   /// Attempts to construct a [ProjectIdentity] from the provided environment map.
   ///
-  /// Returns null if the required environment variables (`THICKET_PROJECT_ID` and `GCP_PROJECT_ID`) are not set.
-  /// This signals to callers that they should fall back to reading a local file.
+  /// Returns null if the required environment variables (`THICKET_PROJECT_ID` and `GCP_PROJECT_ID`) are not set. This
+  /// signals to callers that they should fall back to reading a local file.
   static ProjectIdentity? fromEnvironment(Map<String, String> environment) {
     final String? thicketProjectId = environment['THICKET_PROJECT_ID'];
     final String? gcpProjectId = environment['GCP_PROJECT_ID'];
