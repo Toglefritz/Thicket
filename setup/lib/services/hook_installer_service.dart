@@ -19,13 +19,19 @@ class HookInstallerService {
   const HookInstallerService._();
 
   /// The prompt injected when the user submits a message, reminding the agent to recall relevant context.
-  static const String _recallPrompt = 'Before responding, consider whether the Thicket world model contains '
-      'context relevant to this request. If so, use the recall tool from the '
-      'Thicket MCP server to retrieve it. Use the project path of the current '
-      'workspace as the projectPath argument.';
+  static const String _recallPrompt =
+      'Before responding, consider whether the Thicket world model contains '
+      'context relevant to this request. If so, use the search or recall tools '
+      'from the Thicket MCP server to retrieve it. Use the project path of the '
+      'current workspace as the projectPath argument.\n\n'
+      'When you retrieve a relevant entity from the world model, mention it in '
+      'your response to the user. Briefly describe what you found and how it is '
+      'informing your approach. This makes the value of the world model visible '
+      'to the user.';
 
   /// The prompt injected after a task completes, reminding the agent to record what it learned.
-  static const String _recordPrompt = 'You have just completed a task. Consider whether anything you learned, '
+  static const String _recordPrompt =
+      'You have just completed a task. Consider whether anything you learned, '
       'decided, or observed during this task is worth recording in the Thicket '
       'world model for future reference. This could include architectural '
       'decisions, patterns discovered, constraints encountered, or other '
@@ -64,7 +70,9 @@ class HookInstallerService {
     Map<String, dynamic> hooks;
     if (hooksFile.existsSync()) {
       final String existing = hooksFile.readAsStringSync();
-      hooks = existing.trim().isNotEmpty ? jsonDecode(existing) as Map<String, dynamic> : <String, dynamic>{};
+      hooks = existing.trim().isNotEmpty
+          ? jsonDecode(existing) as Map<String, dynamic>
+          : <String, dynamic>{};
     } else {
       hooks = <String, dynamic>{};
     }
