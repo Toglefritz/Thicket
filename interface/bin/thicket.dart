@@ -4,6 +4,7 @@ import 'package:thicket_interface/src/mcp/tools/get_version_tool.dart';
 import 'package:thicket_interface/src/mcp/tools/initialize_project_tool.dart';
 import 'package:thicket_interface/src/mcp/tools/recall_tool.dart';
 import 'package:thicket_interface/src/mcp/tools/remember_tool.dart';
+import 'package:thicket_interface/src/mcp/tools/search_tool.dart';
 
 /// The current version of the Thicket server.
 ///
@@ -29,6 +30,7 @@ Future<void> main(List<String> arguments) async {
   server.registerTool(rememberTool());
   server.registerTool(recallTool());
   server.registerTool(forgetTool());
+  server.registerTool(searchTool());
 
   await server.serve();
 }
