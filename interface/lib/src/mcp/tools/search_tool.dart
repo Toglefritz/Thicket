@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:thicket/thicket.dart';
 
 import '../mcp_tool.dart';
+import 'embedding_service.dart';
 import 'project_resolver.dart';
 
 /// Creates the `search` tool which finds world model entities across all collections by matching against their summary
@@ -10,7 +11,10 @@ import 'project_resolver.dart';
 ///
 /// This tool combines results from two search strategies:
 /// 1. Text search: case-insensitive token matching against entity summaries.
-/// 2. Embedding search: semantic similarity using vector embeddings (not yet implemented).
+/// 2. Embedding search: semantic similarity using Gemini embedding vectors and cosine distance.
+///
+/// Results from both strategies are merged, deduplicated, and ranked by a combined score. If the embedding API is
+/// unavailable (no API key configured or request failure), the tool falls back to text-only results.
 ///
 /// Results are returned as lightweight references containing the collection name, entity ID, summary, and a relevance
 /// score. The agent can then use the `recall` tool with a specific collection and ID to retrieve full entity details.
@@ -26,7 +30,7 @@ McpTool searchTool() {
     name: 'search',
     description:
         'Searches the project world model for entities relevant to the given query. '
-        'Matches against entity summaries across all collections using text matching. '
+        'Uses both text matching and semantic similarity (embeddings) to find results across all collections. '
         'Returns lightweight references (collection, id, summary, score) rather than full entities. '
         'Use the recall tool with a specific collection and id to retrieve full details of a result.',
     inputSchema: <String, dynamic>{
@@ -67,23 +71,32 @@ McpTool searchTool() {
         projectPath,
       );
 
-      // Run text-based search.
+      if (candidates.isEmpty) {
+        return <String, dynamic>{
+          'count': 0,
+          'results': <Map<String, dynamic>>[],
+        };
+      }
+
+      // Phase 1: text-based search.
       final List<_ScoredResult> textResults = _textSearch(
         candidates: candidates,
         query: query,
       );
 
-      // Placeholder: embedding-based search would produce additional scored results here and be merged with text
-      // results using a combined ranking strategy.
-      // final List<_ScoredResult> embeddingResults = await _embeddingSearch(
-      //   candidates: candidates,
-      //   query: query,
-      // );
+      // Phase 2: embedding-based search.
+      final List<_ScoredResult> embeddingResults = await _embeddingSearch(
+        candidates: candidates,
+        query: query,
+      );
 
-      // Merge and deduplicate results. Currently only text results exist.
-      final List<_ScoredResult> merged = textResults;
+      // Merge results from both strategies.
+      final List<_ScoredResult> merged = _mergeResults(
+        textResults: textResults,
+        embeddingResults: embeddingResults,
+      );
 
-      // Sort by score descending, take top N.
+      // Sort by combined score descending, take top N.
       merged.sort(
         (_ScoredResult a, _ScoredResult b) => b.score.compareTo(a.score),
       );
@@ -138,7 +151,6 @@ Future<List<_SearchCandidate>> _loadAllEntities(
               collection: collection,
               id: entity.id,
               summary: summary,
-              data: entity.data,
             ),
           );
         }
@@ -180,7 +192,6 @@ Future<List<_SearchCandidate>> _loadAllEntities(
               collection: collection,
               id: entity.id,
               summary: summary,
-              data: entity.data,
             ),
           );
         }
@@ -241,45 +252,161 @@ List<_ScoredResult> _textSearch({
   return results;
 }
 
-/// Internal representation of a world model entity prepared for search scoring.
+/// Performs semantic similarity search using Gemini text embeddings.
 ///
-/// Each candidate is built from a [WorldModelEntity] during the loading phase
-/// in [_loadAllEntities]. Only entities that have a non-empty summary are
-/// promoted to candidates, since the summary is the field used for text
-/// matching.
+/// Embeds both the query and all candidate summaries, then computes cosine similarity between the query vector and each
+/// candidate vector. Entities below a minimum similarity threshold are excluded.
+///
+/// Returns an empty list if the embedding service is unavailable or the API request fails. This allows the search tool
+/// to degrade gracefully to text-only results.
+Future<List<_ScoredResult>> _embeddingSearch({
+  required List<_SearchCandidate> candidates,
+  required String query,
+}) async {
+  final EmbeddingService service = EmbeddingService();
+
+  if (!service.isAvailable) {
+    return <_ScoredResult>[];
+  }
+
+  // Embed the query.
+  final List<double>? queryEmbedding = await service.embedSingle(query);
+  if (queryEmbedding == null) {
+    return <_ScoredResult>[];
+  }
+
+  // Embed all candidate summaries in batch.
+  final List<String> summaries = candidates
+      .map((_SearchCandidate c) => c.summary)
+      .toList();
+  final List<List<double>> candidateEmbeddings = await service.embed(summaries);
+
+  if (candidateEmbeddings.isEmpty ||
+      candidateEmbeddings.length != candidates.length) {
+    return <_ScoredResult>[];
+  }
+
+  // Minimum cosine similarity threshold. Candidates below this are not considered relevant.
+  const double threshold = 0.3;
+
+  final List<_ScoredResult> results = <_ScoredResult>[];
+
+  for (int i = 0; i < candidates.length; i++) {
+    final double similarity = EmbeddingService.cosineSimilarity(
+      queryEmbedding,
+      candidateEmbeddings[i],
+    );
+
+    if (similarity < threshold) {
+      continue;
+    }
+
+    results.add(
+      _ScoredResult(
+        collection: candidates[i].collection,
+        id: candidates[i].id,
+        summary: candidates[i].summary,
+        score: similarity,
+      ),
+    );
+  }
+
+  return results;
+}
+
+/// Merges results from text search and embedding search into a single ranked list.
+///
+/// When the same entity appears in both result sets, the scores are combined using a weighted average (text search
+/// weighted at 0.4, embedding search at 0.6) to produce a single score. Entities that appear in only one result set
+/// keep their original score scaled by that strategy's weight.
+List<_ScoredResult> _mergeResults({
+  required List<_ScoredResult> textResults,
+  required List<_ScoredResult> embeddingResults,
+}) {
+  // If either list is empty, return the other directly without weight scaling so scores remain meaningful.
+  if (embeddingResults.isEmpty) {
+    return textResults;
+  }
+  if (textResults.isEmpty) {
+    return embeddingResults;
+  }
+
+  const double textWeight = 0.4;
+  const double embeddingWeight = 0.6;
+
+  // Index embedding results by a composite key for fast lookup.
+  final Map<String, _ScoredResult> embeddingIndex = <String, _ScoredResult>{};
+  for (final _ScoredResult r in embeddingResults) {
+    embeddingIndex['${r.collection}/${r.id}'] = r;
+  }
+
+  final Map<String, _ScoredResult> merged = <String, _ScoredResult>{};
+
+  // Process text results, merging with embedding results where both exist.
+  for (final _ScoredResult textResult in textResults) {
+    final String key = '${textResult.collection}/${textResult.id}';
+    final _ScoredResult? embeddingResult = embeddingIndex.remove(key);
+
+    if (embeddingResult != null) {
+      // Both strategies found this entity; combine scores.
+      final double combinedScore =
+          (textResult.score * textWeight) +
+          (embeddingResult.score * embeddingWeight);
+      merged[key] = _ScoredResult(
+        collection: textResult.collection,
+        id: textResult.id,
+        summary: textResult.summary,
+        score: combinedScore,
+      );
+    } else {
+      // Only text search found this entity.
+      merged[key] = _ScoredResult(
+        collection: textResult.collection,
+        id: textResult.id,
+        summary: textResult.summary,
+        score: textResult.score * textWeight,
+      );
+    }
+  }
+
+  // Remaining embedding results that had no text match.
+  for (final _ScoredResult embeddingResult in embeddingIndex.values) {
+    final String key = '${embeddingResult.collection}/${embeddingResult.id}';
+    merged[key] = _ScoredResult(
+      collection: embeddingResult.collection,
+      id: embeddingResult.id,
+      summary: embeddingResult.summary,
+      score: embeddingResult.score * embeddingWeight,
+    );
+  }
+
+  return merged.values.toList();
+}
+
+/// Internal representation of a world model entity prepared for search scoring.
 class _SearchCandidate {
   const _SearchCandidate({
     required this.collection,
     required this.id,
     required this.summary,
-    required this.data,
   });
 
-  /// The world model collection this entity belongs to (e.g. "characters",
-  /// "locations"). Corresponds to a storage subdirectory or Firestore
-  /// subcollection.
+  /// The world model collection this entity belongs to.
   final String collection;
 
   /// The stable identifier for this entity within its collection.
   final String id;
 
-  /// A human-readable summary extracted from the entity's data map.
-  ///
-  /// This is the primary field used for text-based search scoring.
+  /// A human-readable summary extracted from the entity's data map. This is the field used for both text matching and
+  /// embedding generation.
   final String summary;
-
-  /// The full data payload of the entity, retained so that future scoring
-  /// strategies (such as embedding search) can access additional fields
-  /// without a second round-trip to storage.
-  final Map<String, dynamic> data;
 }
 
 /// A search result paired with a relevance score.
 ///
-/// Produced by scoring functions like `_textSearch` and intended for ranking,
-/// deduplication, and final output formatting. The `data` map is intentionally
-/// excluded here because results are returned as lightweight references; the
-/// agent retrieves full details through the `recall` tool when needed.
+/// Produced by scoring functions and the merge step. The score semantics depend on context: for text search it
+/// represents token match fraction, for embedding search it represents cosine similarity, and after merging it
+/// represents the weighted combination.
 class _ScoredResult {
   const _ScoredResult({
     required this.collection,
@@ -291,17 +418,12 @@ class _ScoredResult {
   /// The world model collection this result originated from.
   final String collection;
 
-  /// The entity identifier, usable with the `recall` tool to fetch full
-  /// details.
+  /// The entity identifier, usable with the `recall` tool to fetch full details.
   final String id;
 
-  /// The entity summary, included in the response so the agent can decide
-  /// which results are worth recalling in full.
+  /// The entity summary, included so the agent can decide which results are worth recalling in full.
   final String summary;
 
-  /// Relevance score in the range 0.0 to 1.0.
-  ///
-  /// For text search, this represents the fraction of query tokens that
-  /// appeared in the entity's summary.
+  /// Relevance score. Higher values indicate greater relevance to the query.
   final double score;
 }
