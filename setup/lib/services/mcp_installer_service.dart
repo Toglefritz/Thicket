@@ -5,17 +5,51 @@ import 'package:path/path.dart' as p;
 
 import '../models/ide_type.dart';
 
+/// The GitHub repository URL for the Thicket project.
+const String _thicketGitUrl = 'https://github.com/Toglefritz/Thicket.git';
+
+/// The subdirectory within the Thicket repository containing the MCP server package.
+const String _interfaceGitPath = 'interface';
+
 /// Writes the MCP server configuration for the selected IDE into the target project directory.
 ///
-/// This service generates the JSON configuration that tells the IDE how to launch the Thicket MCP server process. The
-/// configuration file location and format vary by IDE, but all use the stdio-based JSON-RPC transport.
+/// This service globally activates the Thicket MCP server package from GitHub, then generates the JSON configuration
+/// that tells the IDE how to launch it. The configuration file location and format vary by IDE, but all use the
+/// stdio-based JSON-RPC transport.
 class McpInstallerService {
   const McpInstallerService._();
 
-  /// Installs the Thicket MCP server configuration for [ide] in [projectPath].
+  /// Globally activates the Thicket MCP server package from GitHub.
   ///
-  /// The [thicketRootPath] is the absolute path to the Thicket repository root, used to construct the command that
-  /// launches the MCP server binary.
+  /// Runs `dart pub global activate --source git` targeting the `interface` subdirectory of the Thicket repository.
+  /// This makes the `thicket_interface:thicket` executable available system-wide without requiring a local clone of the
+  /// repository.
+  ///
+  /// Throws a [ProcessException] or [Exception] if activation fails.
+  static Future<void> activateFromGitHub() async {
+    final ProcessResult result = await Process.run(
+      'dart',
+      <String>[
+        'pub',
+        'global',
+        'activate',
+        '--source',
+        'git',
+        _thicketGitUrl,
+        '--git-path',
+        _interfaceGitPath,
+      ],
+    );
+
+    if (result.exitCode != 0) {
+      final String stderr = (result.stderr as String).trim();
+      throw Exception(
+        'Failed to activate Thicket MCP server from GitHub: $stderr',
+      );
+    }
+  }
+
+  /// Installs the Thicket MCP server configuration for [ide] in [projectPath].
   ///
   /// If the configuration file already exists, the `thicket` server entry is merged into the existing file without
   /// overwriting other server definitions.
@@ -24,7 +58,6 @@ class McpInstallerService {
   static String install({
     required IdeType ide,
     required String projectPath,
-    required String thicketRootPath,
   }) {
     final String configPath = p.join(projectPath, ide.configRelativePath);
     final File configFile = File(configPath);
@@ -36,9 +69,7 @@ class McpInstallerService {
     }
 
     // Build the Thicket MCP server entry.
-    final Map<String, dynamic> thicketServer = _buildServerEntry(
-      thicketRootPath: thicketRootPath,
-    );
+    final Map<String, dynamic> thicketServer = _buildServerEntry();
 
     // Merge into any existing configuration.
     Map<String, dynamic> config;
@@ -63,18 +94,16 @@ class McpInstallerService {
 
   /// Constructs the MCP server entry describing how to launch the Thicket process.
   ///
-  /// The server is started with `dart run` targeting the interface package's binary. The working directory is set to
-  /// the interface package so that `dart run` resolves dependencies correctly.
-  static Map<String, dynamic> _buildServerEntry({
-    required String thicketRootPath,
-  }) {
-    final String interfacePath = p.join(thicketRootPath, 'interface');
-
+  /// The server is launched via `dart pub global run`, which invokes the globally activated `thicket_interface`
+  /// package's `thicket` executable. This removes any dependency on a local clone of the Thicket repository.
+  static Map<String, dynamic> _buildServerEntry() {
     return <String, dynamic>{
       'command': 'dart',
       'args': <String>[
+        'pub',
+        'global',
         'run',
-        p.join(interfacePath, 'bin', 'thicket.dart'),
+        'thicket_interface:thicket',
       ],
     };
   }

@@ -4,7 +4,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:setup/extensions/build_context_extensions.dart';
 
 import '../../models/ide_type.dart';
@@ -13,7 +12,6 @@ import '../../theme/insets.dart';
 import 'home_controller.dart';
 
 part 'components/complete_step.dart';
-part 'components/copyable_row.dart';
 part 'components/ide_option_card.dart';
 part 'components/name_project_step.dart';
 part 'components/registering_step.dart';

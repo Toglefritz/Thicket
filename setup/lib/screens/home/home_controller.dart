@@ -154,10 +154,8 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api =
-          ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result =
-          await api.registerProject(projectName: projectName);
+      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result = await api.registerProject(projectName: projectName);
       _registrationResult = result;
 
       // Write the local config file to the specified directory.
@@ -178,22 +176,23 @@ class HomeController extends State<HomeRoute> {
 
   /// Installs the Thicket MCP server configuration and agent hooks for the selected IDE.
   ///
-  /// Writes the MCP config file in the project directory at the path expected by [ide], then installs hooks that prompt
-  /// the agent to recall context on prompt submission and record knowledge after completing a task. Uses the Thicket
-  /// repo location (derived from this app's own executable path) to construct the server launch command.
-  void installMcpServer(IdeType ide) {
+  /// First activates the Thicket MCP server package from GitHub using `dart pub global activate`, then writes the MCP
+  /// config file in the project directory at the path expected by [ide], and installs hooks that prompt the agent to
+  /// recall context on prompt submission and record knowledge after completing a task.
+  Future<void> installMcpServer(IdeType ide) async {
     final String projectPath = projectPathController.text.trim();
 
-    // Resolve the Thicket repository root. The setup app lives at <thicket>/setup, so we go one level up from the setup
-    // package directory. Platform.script points to the running Dart file within the setup package.
-    final String thicketRoot =
-        p.dirname(p.dirname(Platform.script.toFilePath()));
+    setState(() {
+      _error = null;
+    });
 
     try {
+      // Activate the Thicket MCP server globally from GitHub.
+      await McpInstallerService.activateFromGitHub();
+
       final String configPath = McpInstallerService.install(
         ide: ide,
         projectPath: projectPath,
-        thicketRootPath: thicketRoot,
       );
 
       HookInstallerService.install(
@@ -239,27 +238,65 @@ class HomeController extends State<HomeRoute> {
     });
   }
 
-  /// Writes `.thicket/project.json` in the specified project directory.
+  /// Writes `.thicket/project.json` and `.thicket/credentials.json` in the specified project directory.
+  ///
+  /// The project config contains non-sensitive metadata (project ID, name, agent URL) and is safe to commit. The
+  /// credentials file contains the API token and is automatically added to `.gitignore`.
   void _writeProjectConfig(
-      RegistrationResult result, String projectName, String projectPath) {
+    RegistrationResult result,
+    String projectName,
+    String projectPath,
+  ) {
     final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
 
     if (!thicketDir.existsSync()) {
       thicketDir.createSync(recursive: true);
     }
 
-    final Map<String, dynamic> config = <String, dynamic>{
+    // Write the non-sensitive project configuration.
+    final Map<String, dynamic> projectConfig = <String, dynamic>{
       'projectId': result.projectId,
       'projectName': projectName,
       'createdAt': DateTime.now().toUtc().toIso8601String(),
       'storageMode': 'cloud',
       'agentUrl': result.agentUrl,
+    };
+
+    final File projectFile = File(p.join(thicketDir.path, 'project.json'));
+    projectFile.writeAsStringSync(
+      const JsonEncoder.withIndent('  ').convert(projectConfig),
+    );
+
+    // Write the sensitive credentials separately.
+    final Map<String, dynamic> credentials = <String, dynamic>{
       'apiToken': result.apiToken,
     };
 
-    final File configFile = File(p.join(thicketDir.path, 'project.json'));
-    configFile
-        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(config));
+    final File credentialsFile = File(p.join(thicketDir.path, 'credentials.json'));
+    credentialsFile.writeAsStringSync(
+      const JsonEncoder.withIndent('  ').convert(credentials),
+    );
+
+    // Ensure credentials.json is listed in the project's .gitignore.
+    _ensureGitignore(projectPath);
+  }
+
+  /// Appends `.thicket/credentials.json` to the project's `.gitignore` if not already present.
+  void _ensureGitignore(String projectPath) {
+    const String entry = '.thicket/credentials.json';
+    final File gitignore = File(p.join(projectPath, '.gitignore'));
+
+    if (gitignore.existsSync()) {
+      final String content = gitignore.readAsStringSync();
+      if (content.contains(entry)) {
+        return;
+      }
+      // Append with a preceding newline if the file doesn't end with one.
+      final String prefix = content.endsWith('\n') ? '' : '\n';
+      gitignore.writeAsStringSync('$prefix$entry\n', mode: FileMode.append);
+    } else {
+      gitignore.writeAsStringSync('$entry\n');
+    }
   }
 
   @override

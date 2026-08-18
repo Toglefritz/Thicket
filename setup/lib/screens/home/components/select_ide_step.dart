@@ -35,7 +35,7 @@ class _SelectIdeStep extends StatelessWidget {
                 .map(
                   (IdeType ide) => _IdeOptionCard(
                     ide: ide,
-                    onSelected: () => state.installMcpServer(ide),
+                    onSelected: () => unawaited(state.installMcpServer(ide)),
                   ),
                 )
                 .toList(),
