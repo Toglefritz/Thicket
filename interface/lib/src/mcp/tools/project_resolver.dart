@@ -78,9 +78,13 @@ class ProjectResolver {
 
   /// Creates a [FirestoreEntityStore] for projects using cloud storage.
   ///
-  /// Reads the GCP project ID from the identity file and credentials from environment variables. Uses the
-  /// `thicket-world-model` named database (matching the backend's Firestore instance) unless overridden by the
-  /// `FIRESTORE_DATABASE_ID` environment variable.
+  /// Resolves credentials in the following order:
+  /// 1. `GOOGLE_ACCESS_TOKEN` environment variable (explicit token)
+  /// 2. `FIREBASE_API_KEY` environment variable (API key auth)
+  /// 3. `gcloud auth print-access-token` (Application Default Credentials via gcloud CLI)
+  ///
+  /// This fallback chain ensures the MCP server works seamlessly on developer machines without requiring manual
+  /// environment variable configuration — if `gcloud` is authenticated, it just works.
   ///
   /// Throws [StateError] if the required GCP project ID is missing.
   static FirestoreEntityStore createFirestoreStore(ProjectIdentity identity) {
@@ -94,8 +98,13 @@ class ProjectResolver {
       );
     }
 
-    final String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
+    String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];
     final String? apiKey = Platform.environment['FIREBASE_API_KEY'];
+
+    // If no explicit credentials are set, try to obtain a token from gcloud CLI.
+    if (accessToken == null && apiKey == null) {
+      accessToken = _getGcloudAccessToken();
+    }
 
     return FirestoreEntityStore(
       gcpProjectId: gcpProjectId,
@@ -106,5 +115,27 @@ class ProjectResolver {
           Platform.environment['FIRESTORE_DATABASE_ID'] ??
           'thicket-world-model',
     );
+  }
+
+  /// Attempts to obtain an access token from the gcloud CLI.
+  ///
+  /// Runs `gcloud auth print-access-token` synchronously. Returns the token string on success, or null if gcloud is
+  /// not installed, not authenticated, or the command fails for any reason.
+  static String? _getGcloudAccessToken() {
+    try {
+      final ProcessResult result = Process.runSync(
+        'gcloud',
+        <String>['auth', 'print-access-token'],
+      );
+      if (result.exitCode == 0) {
+        final String token = (result.stdout as String).trim();
+        if (token.isNotEmpty) {
+          return token;
+        }
+      }
+    } catch (_) {
+      // gcloud not installed or not on PATH — fall through to null.
+    }
+    return null;
   }
 }
