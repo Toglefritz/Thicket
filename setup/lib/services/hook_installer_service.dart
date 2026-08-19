@@ -25,7 +25,9 @@ class HookInstallerService {
       'the current workspace path as the projectPath argument.\n\n'
       'Look for lessons, patterns, architectural decisions, or constraints that '
       'previous sessions discovered about this codebase. When you find something '
-      'relevant, briefly mention what you found and how it informs your approach.';
+      'relevant, briefly mention what you found and how it informs your approach.\n\n'
+      'If the search returns no results or the tool is unavailable, proceed '
+      'normally without mentioning Thicket to the user.';
 
   /// The prompt injected after a task completes, reminding the agent to record what it learned.
   static const String _recordPrompt =
