@@ -66,14 +66,55 @@ class HookInstallerService {
 
   /// Writes hooks in Antigravity's `.agents/` format.
   ///
-  /// Antigravity uses a single `hooks.json` file at `.agents/hooks.json` with trigger-keyed entries. Each trigger maps
-  /// to a list of actions. The `agent` type injects a prompt into the conversation context.
+  /// Antigravity hooks are shell commands that receive JSON on stdin and output JSON on stdout. For prompt injection,
+  /// the `PreInvocation` event outputs `injectSteps` with an `ephemeralMessage`. The scripts are written to
+  /// `.agents/scripts/` and referenced from `.agents/hooks.json`.
   static void _installAntigravityHooks(String projectPath) {
     final Directory agentsDir = Directory(p.join(projectPath, '.agents'));
     if (!agentsDir.existsSync()) {
       agentsDir.createSync(recursive: true);
     }
 
+    final Directory scriptsDir = Directory(
+      p.join(agentsDir.path, 'scripts'),
+    );
+    if (!scriptsDir.existsSync()) {
+      scriptsDir.createSync(recursive: true);
+    }
+
+    // Write the recall script (injects a prompt before the model runs).
+    final File recallScript = File(
+      p.join(scriptsDir.path, 'thicket_recall.sh'),
+    );
+    recallScript.writeAsStringSync(
+      '#!/bin/sh\n'
+      "cat <<'EOF'\n"
+      '${jsonEncode(<String, dynamic>{
+            'injectSteps': <Map<String, dynamic>>[
+              <String, dynamic>{'ephemeralMessage': _recallPrompt},
+            ],
+          })}\n'
+      'EOF\n',
+    );
+    Process.runSync('chmod', <String>['+x', recallScript.path]);
+
+    // Write the record script (injects a prompt after tool calls finish).
+    final File recordScript = File(
+      p.join(scriptsDir.path, 'thicket_record.sh'),
+    );
+    recordScript.writeAsStringSync(
+      '#!/bin/sh\n'
+      "cat <<'EOF'\n"
+      '${jsonEncode(<String, dynamic>{
+            'injectSteps': <Map<String, dynamic>>[
+              <String, dynamic>{'ephemeralMessage': _recordPrompt},
+            ],
+          })}\n'
+      'EOF\n',
+    );
+    Process.runSync('chmod', <String>['+x', recordScript.path]);
+
+    // Write the hooks.json configuration.
     final File hooksFile = File(p.join(agentsDir.path, 'hooks.json'));
 
     // Merge with existing hooks if the file already exists.
@@ -90,17 +131,17 @@ class HookInstallerService {
     hooks['thicket-recall'] = <String, dynamic>{
       'PreInvocation': <Map<String, dynamic>>[
         <String, dynamic>{
-          'type': 'agent',
-          'message': _recallPrompt,
+          'type': 'command',
+          'command': './scripts/thicket_recall.sh',
         },
       ],
     };
 
     hooks['thicket-record'] = <String, dynamic>{
-      'Stop': <Map<String, dynamic>>[
+      'PostInvocation': <Map<String, dynamic>>[
         <String, dynamic>{
-          'type': 'agent',
-          'message': _recordPrompt,
+          'type': 'command',
+          'command': './scripts/thicket_record.sh',
         },
       ],
     };
