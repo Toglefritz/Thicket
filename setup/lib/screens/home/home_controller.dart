@@ -333,7 +333,7 @@ class HomeController extends State<HomeRoute> {
       'createdAt': DateTime.now().toUtc().toIso8601String(),
       'storageMode': 'cloud',
       'agentUrl': result.agentUrl,
-      if (result.gcpProjectId != null) 'gcpProjectId': result.gcpProjectId,
+      'gcpProjectId': result.gcpProjectId ?? 'thicket-505111',
     };
 
     final File projectFile = File(p.join(thicketDir.path, 'project.json'));

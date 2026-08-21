@@ -42,7 +42,8 @@ McpTool searchTool() {
         },
         'query': <String, String>{
           'type': 'string',
-          'description': 'Natural-language search query to match against entity summaries.',
+          'description':
+              'Natural-language search query to match against entity summaries.',
         },
         'maxResults': <String, String>{
           'type': 'integer',
@@ -100,7 +101,9 @@ McpTool searchTool() {
         (_ScoredResult a, _ScoredResult b) => b.score.compareTo(a.score),
       );
 
-      final List<_ScoredResult> topResults = merged.length > maxResults ? merged.sublist(0, maxResults) : merged;
+      final List<_ScoredResult> topResults = merged.length > maxResults
+          ? merged.sublist(0, maxResults)
+          : merged;
 
       return <String, dynamic>{
         'count': topResults.length,
@@ -119,10 +122,24 @@ McpTool searchTool() {
   );
 }
 
+/// The standard knowledge collections that the search tool iterates over.
+///
+/// These match the categories recommended in the `remember` tool description. Using a fixed set avoids the need for
+/// `listCollectionIds` permissions, which are not available with standard user credentials.
+const List<String> _knownCollections = <String>[
+  'architecture',
+  'conventions',
+  'decisions',
+  'gotchas',
+  'dependencies',
+  'workflows',
+  '_meta',
+];
+
 /// Loads all entities from every collection in the project's world model.
 ///
-/// For cloud storage, uses `listCollections` to discover collections, then `listAll` for each. For local storage, lists
-/// subdirectories of the storage root.
+/// For cloud storage, iterates over [_knownCollections] and loads entities from each. Collections that don't exist yet
+/// simply return empty results. For local storage, lists subdirectories of the storage root.
 Future<List<_SearchCandidate>> _loadAllEntities(
   ProjectIdentity identity,
   String projectPath,
@@ -134,23 +151,26 @@ Future<List<_SearchCandidate>> _loadAllEntities(
       identity,
     );
 
-    final List<String> collections = await store.listCollections();
-    for (final String collection in collections) {
-      final List<Map<String, dynamic>> entities = await store.listAll(
-        collection: collection,
-      );
-      for (final Map<String, dynamic> json in entities) {
-        final WorldModelEntity entity = WorldModelEntity.fromJson(json);
-        final String summary = (entity.data['summary'] as String?) ?? '';
-        if (summary.isNotEmpty) {
-          candidates.add(
-            _SearchCandidate(
-              collection: collection,
-              id: entity.id,
-              summary: summary,
-            ),
-          );
+    for (final String collection in _knownCollections) {
+      try {
+        final List<Map<String, dynamic>> entities = await store.listAll(
+          collection: collection,
+        );
+        for (final Map<String, dynamic> json in entities) {
+          final WorldModelEntity entity = WorldModelEntity.fromJson(json);
+          final String summary = (entity.data['summary'] as String?) ?? '';
+          if (summary.isNotEmpty) {
+            candidates.add(
+              _SearchCandidate(
+                collection: collection,
+                id: entity.id,
+                summary: summary,
+              ),
+            );
+          }
         }
+      } catch (_) {
+        // Collection may not exist yet — skip it silently.
       }
     }
   } else {
@@ -170,7 +190,10 @@ Future<List<_SearchCandidate>> _loadAllEntities(
     final EntityStore store = EntityStore(storagePath: storagePath);
 
     // Each subdirectory of the storage root is a collection.
-    final List<Directory> collectionDirs = storageRoot.listSync().whereType<Directory>().toList();
+    final List<Directory> collectionDirs = storageRoot
+        .listSync()
+        .whereType<Directory>()
+        .toList();
 
     for (final Directory dir in collectionDirs) {
       final String collection = dir.path.split(Platform.pathSeparator).last;
@@ -270,10 +293,13 @@ Future<List<_ScoredResult>> _embeddingSearch({
   }
 
   // Embed all candidate summaries in batch.
-  final List<String> summaries = candidates.map((_SearchCandidate c) => c.summary).toList();
+  final List<String> summaries = candidates
+      .map((_SearchCandidate c) => c.summary)
+      .toList();
   final List<List<double>> candidateEmbeddings = await service.embed(summaries);
 
-  if (candidateEmbeddings.isEmpty || candidateEmbeddings.length != candidates.length) {
+  if (candidateEmbeddings.isEmpty ||
+      candidateEmbeddings.length != candidates.length) {
     return <_ScoredResult>[];
   }
 
@@ -340,7 +366,9 @@ List<_ScoredResult> _mergeResults({
 
     if (embeddingResult != null) {
       // Both strategies found this entity; combine scores.
-      final double combinedScore = (textResult.score * textWeight) + (embeddingResult.score * embeddingWeight);
+      final double combinedScore =
+          (textResult.score * textWeight) +
+          (embeddingResult.score * embeddingWeight);
       merged[key] = _ScoredResult(
         collection: textResult.collection,
         id: textResult.id,
