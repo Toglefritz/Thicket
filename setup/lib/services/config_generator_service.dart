@@ -7,7 +7,7 @@ import 'thicket_api_service.dart';
 ///
 /// On web, the setup wizard cannot write files directly to the user's machine. Instead, this service produces the JSON
 /// content that the user should manually place in their project. The output matches exactly what the desktop version
-/// writes via [FileWriterService], [McpInstallerService], and [HookInstallerService].
+/// writes via the file writer, MCP installer, and hook installer services.
 class ConfigGeneratorService {
   const ConfigGeneratorService._();
 

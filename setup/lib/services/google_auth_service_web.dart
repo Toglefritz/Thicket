@@ -1,5 +1,5 @@
 import 'dart:async';
-// ignore: avoid_web_libraries_in_flutter
+// ignore: deprecated_member_use
 import 'dart:html' as html;
 
 /// Handles the Google OAuth2 sign-in flow for web using the implicit grant.
@@ -9,7 +9,8 @@ import 'dart:html' as html;
 /// A listener on the popup's navigation detects the token and completes the flow.
 class GoogleAuthService {
   /// The OAuth2 client ID for the Thicket installer application.
-  static const String _clientId = String.fromEnvironment('GOOGLE_OAUTH_CLIENT_ID');
+  static const String _clientId =
+      String.fromEnvironment('GOOGLE_OAUTH_CLIENT_ID');
 
   /// The OAuth2 scopes needed to identify the user.
   static const List<String> _scopes = <String>[
@@ -24,9 +25,11 @@ class GoogleAuthService {
   ///
   /// Throws an exception if the flow fails, is cancelled, or times out.
   static Future<String> signIn() async {
-    final String redirectUri = '${html.window.location.origin}/oauth_callback.html';
+    final String redirectUri =
+        '${html.window.location.origin}/oauth_callback.html';
 
-    final Uri authUrl = Uri.https('accounts.google.com', '/o/oauth2/v2/auth', <String, String>{
+    final Uri authUrl =
+        Uri.https('accounts.google.com', '/o/oauth2/v2/auth', <String, String>{
       'client_id': _clientId,
       'redirect_uri': redirectUri,
       'response_type': 'token',
@@ -50,23 +53,24 @@ class GoogleAuthService {
 
         if (accessToken != null && accessToken.isNotEmpty) {
           tokenCompleter.complete(accessToken);
-          subscription.cancel();
+          unawaited(subscription.cancel());
         } else if (error != null) {
           tokenCompleter.completeError(Exception('OAuth error: $error'));
-          subscription.cancel();
+          unawaited(subscription.cancel());
         }
       }
     });
 
     // Open the consent page in a popup.
-    final html.WindowBase? popup = html.window.open(
+    final html.WindowBase popup = html.window.open(
       authUrl.toString(),
       'thicket_oauth',
       'width=500,height=700,menubar=no,toolbar=no,location=yes',
     );
 
+    // ignore: unnecessary_null_comparison
     if (popup == null) {
-      subscription.cancel();
+      unawaited(subscription.cancel());
       throw Exception(
         'Failed to open sign-in popup. Please allow popups for this site.',
       );
@@ -76,7 +80,7 @@ class GoogleAuthService {
     Timer.periodic(const Duration(milliseconds: 500), (Timer timer) {
       if (popup.closed == true && !tokenCompleter.isCompleted) {
         timer.cancel();
-        subscription.cancel();
+        unawaited(subscription.cancel());
         tokenCompleter.completeError(Exception('Sign-in was cancelled.'));
       }
       if (tokenCompleter.isCompleted) {
@@ -87,7 +91,7 @@ class GoogleAuthService {
     try {
       return await tokenCompleter.future.timeout(const Duration(minutes: 3));
     } on TimeoutException {
-      subscription.cancel();
+      unawaited(subscription.cancel());
       throw Exception('Sign-in timed out. Please try again.');
     }
   }

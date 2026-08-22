@@ -8,6 +8,7 @@ environment:
   flutter: ">=3.10.0"
 
 dependencies:
+  archive: ^4.1.0
   flutter:
     sdk: flutter
   flutter_localizations:

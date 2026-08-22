@@ -5,8 +5,8 @@ part of '../home_view.dart';
 /// On desktop, displays the project ID, API token, agent URL, and the path to the MCP configuration file that was
 /// written for the selected IDE.
 ///
-/// On web, displays all configuration files (project config, credentials, MCP config, and agent hooks) that the user
-/// should copy into their project directory, since file-system writes are not available from the browser.
+/// On web, displays all configuration files (project config, credentials, MCP config, and agent hooks) with download
+/// buttons. Users can download everything as a ZIP or grab individual files.
 class _CompleteStep extends StatelessWidget {
   const _CompleteStep({required this.state});
 
@@ -132,12 +132,21 @@ class _CompleteStep extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: Insets.small),
             child: Text(
-              'Copy the files below into your project to complete setup.',
+              'Download the configuration files and place them in your project directory.',
               style: Theme.of(context).textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),
           ),
-          // Render each configuration file as a copyable card.
+          // Download All button.
+          Padding(
+            padding: const EdgeInsets.only(top: Insets.large),
+            child: FilledButton.icon(
+              onPressed: state.downloadAllConfigs,
+              icon: const Icon(Icons.download),
+              label: const Text('Download All (ZIP)'),
+            ),
+          ),
+          // Render each configuration file as a card with copy and download buttons.
           ...entries.map(
             (MapEntry<String, String> entry) => Padding(
               padding: const EdgeInsets.only(top: Insets.medium),
@@ -145,10 +154,12 @@ class _CompleteStep extends StatelessWidget {
                 title: entry.key,
                 content: entry.value,
                 onCopy: () => state.copyToClipboard(context, entry.value),
+                onDownload: () =>
+                    state.downloadSingleFile(entry.key, entry.value),
               ),
             ),
           ),
-          // Reminder about gitignore.
+          // Reminder about gitignore and permissions.
           Padding(
             padding: const EdgeInsets.only(top: Insets.medium),
             child: Card(
@@ -192,14 +203,15 @@ class _CompleteStep extends StatelessWidget {
   }
 }
 
-/// A card displaying a configuration file with a copy button.
+/// A card displaying a configuration file with copy and download buttons.
 ///
-/// Used on the web completion step to show file contents that the user should save to their project.
+/// Used on the web completion step to show file contents that the user can copy or download individually.
 class _CopyableConfigCard extends StatelessWidget {
   const _CopyableConfigCard({
     required this.title,
     required this.content,
     required this.onCopy,
+    required this.onDownload,
   });
 
   /// The file path shown as the card title.
@@ -210,6 +222,9 @@ class _CopyableConfigCard extends StatelessWidget {
 
   /// Callback when the copy button is pressed.
   final VoidCallback onCopy;
+
+  /// Callback when the download button is pressed.
+  final VoidCallback onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -234,6 +249,11 @@ class _CopyableConfigCard extends StatelessWidget {
                   icon: const Icon(Icons.copy, size: 20),
                   tooltip: 'Copy to clipboard',
                   onPressed: onCopy,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.download, size: 20),
+                  tooltip: 'Download file',
+                  onPressed: onDownload,
                 ),
               ],
             ),

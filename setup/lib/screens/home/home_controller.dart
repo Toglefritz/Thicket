@@ -6,18 +6,19 @@ import 'package:flutter/services.dart';
 
 import '../../models/ide_type.dart';
 import '../../services/config_generator_service.dart';
-import '../../services/google_auth_service.dart';
-import '../../services/thicket_api_service.dart';
-import 'home_route.dart';
-import 'home_view.dart';
-
 // Conditional imports for native-only services.
 import '../../services/file_writer_service.dart'
     if (dart.library.html) '../../services/file_writer_service_noop.dart';
+import '../../services/google_auth_service.dart';
 import '../../services/hook_installer_service.dart'
     if (dart.library.html) '../../services/hook_installer_service_noop.dart';
 import '../../services/mcp_installer_service.dart'
     if (dart.library.html) '../../services/mcp_installer_service_noop.dart';
+import '../../services/thicket_api_service.dart';
+import '../../services/web_download_service_stub.dart'
+    if (dart.library.html) '../../services/web_download_service.dart';
+import 'home_route.dart';
+import 'home_view.dart';
 
 /// The discrete steps the wizard progresses through.
 enum SetupStep {
@@ -331,8 +332,9 @@ class HomeController extends State<HomeRoute> {
   /// agent hooks for the selected IDE.
   List<MapEntry<String, String>> get webConfigEntries {
     final RegistrationResult? result = _registrationResult;
-    if (result == null || _selectedIde == null)
+    if (result == null || _selectedIde == null) {
       return <MapEntry<String, String>>[];
+    }
 
     final List<MapEntry<String, String>> entries = <MapEntry<String, String>>[
       MapEntry<String, String>(
@@ -354,14 +356,29 @@ class HomeController extends State<HomeRoute> {
   }
 
   /// Copies the given text to the system clipboard and shows a snackbar confirmation.
-  void copyToClipboard(BuildContext context, String text) {
-    Clipboard.setData(ClipboardData(text: text));
+  Future<void> copyToClipboard(BuildContext context, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+
+    if (!context.mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Copied to clipboard'),
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  /// Downloads all configuration files as a ZIP archive (web only).
+  void downloadAllConfigs() {
+    WebDownloadService.downloadAsZip(entries: webConfigEntries);
+  }
+
+  /// Downloads a single configuration file (web only).
+  void downloadSingleFile(String fileName, String content) {
+    // Use just the filename without directory path for the download.
+    final String name = fileName.split('/').last;
+    WebDownloadService.downloadFile(fileName: name, content: content);
   }
 
   /// Resets the wizard back to the initial sign-in step.
