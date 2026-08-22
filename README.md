@@ -2,6 +2,10 @@
 
 **Thicket is an architecture for long-lived AI agents that continuously learn from the environments in which they operate.**
 
+<p align="center">
+  <img src="docs/logos/thicket_logo.png" width="150" />
+</p>
+
 Most AI agents are transient. They receive a task, gather context, produce a result, and then discard much of what they learned. When they return to the same project later, they often spend additional inference reconstructing information they have already encountered.
 
 Thicket gives agents a persistent **world model** that stores and structures knowledge accumulated over time. Instead of repeatedly rebuilding context from raw artifacts, an agent can retrieve its existing understanding, update it as new information arrives, and use that accumulated experience during future work.
@@ -55,6 +59,10 @@ Thicket is organized into three independent layers.
 │ observations • provenance • history  │
 └──────────────────────────────────────┘
 ```
+
+<p align="center">
+  <img src="docs/diagrams/thicket_architecture.pretty.png" />
+</p>
 
 ### World Model
 
