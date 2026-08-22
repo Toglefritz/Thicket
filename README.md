@@ -124,16 +124,87 @@ An engineering agent in a software project could learn architecture and historic
 
 The underlying architecture remains the same even though the resulting world models may look very different.
 
-## Future Direction
+## Reproducible Testing
 
-The initial focus is on enabling individual agents to accumulate and reuse experience.
+Thicket is a hosted platform. You do not need your own GCP project, Gemini API key, or Firestore database. All backend infrastructure runs on the Thicket Cloud Run service. Setup takes roughly two minutes.
 
-Future work may explore:
+### Prerequisites
 
-* automatic consolidation and forgetting;
-* alternative retrieval strategies;
-* confidence and uncertainty modeling;
-* shared knowledge between agents;
-* specialization;
-* automated comparison of world-model strategies;
-* evolutionary optimization of agent cognition.
+- A Google account (for OAuth sign-in).
+- An agentic IDE with MCP support (e.g., Antigravity IDE).
+- The [Dart SDK](https://dart.dev/get-dart) (required to run the Thicket MCP server locally).
+
+### Option A: Web Setup
+
+The fastest path. No installs required beyond a browser.
+
+1. Visit [thicket-505111.web.app](https://thicket-505111.web.app).
+2. Click **Sign in with Google** and authorize the application.
+3. Enter a project name (e.g., `hackathon-test`) and click **Create project**.
+4. Select the IDE you will be using.
+5. Click **Download All (ZIP)** to get your configuration files.
+6. Unzip the archive into the root of any project directory you want Thicket to learn about.
+7. Activate the Thicket MCP server on your machine:
+   ```bash
+   dart pub global activate --source git https://github.com/Toglefritz/Thicket.git --git-path interface
+   ```
+8. Open the project in your IDE. The MCP server and agent hooks are now configured.
+
+After setup, your AI agent will automatically search the Thicket world model for relevant knowledge before responding, and record useful discoveries after completing tasks.
+
+### Option B: CLI Setup
+
+A terminal-based wizard that performs the same steps and writes all files directly to your project.
+
+1. Clone this repository and navigate to the CLI tool:
+   ```bash
+   git clone https://github.com/Toglefritz/Thicket.git
+   cd Thicket/setup_cli
+   dart pub get
+   ```
+2. Set your OAuth credentials and run:
+   ```bash
+   export GOOGLE_OAUTH_CLIENT_ID=1081534978416-r154ltgn28e9gq4qgsctbsdvntrvhuro.apps.googleusercontent.com
+   export GOOGLE_OAUTH_CLIENT_SECRET=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
+   dart run bin/setup_cli.dart
+   ```
+3. Follow the interactive prompts:
+   - Your browser opens for Google sign-in.
+   - Enter the path to your target project directory.
+   - Provide a project name.
+   - Select your IDE (Antigravity or Kiro).
+4. The CLI writes all configuration files, installs the MCP server, and sets up agent hooks automatically.
+
+### Verifying It Works
+
+Once setup is complete (via either method):
+
+1. Open your configured project in your IDE.
+2. Start a conversation with the AI agent and ask it something about the project (e.g., "What is the architecture of this project?").
+3. The agent should mention that it searched the Thicket world model (it may find nothing yet on a fresh project — that is expected).
+4. Ask the agent to perform a task (e.g., "Add a comment explaining the main function").
+5. After the task completes, the agent should reflect on whether it learned anything worth recording.
+
+Over time and repeated sessions, the world model accumulates knowledge that future sessions can draw from.
+
+### What Gets Created
+
+After setup, your project directory will contain:
+
+```
+your-project/
+  .thicket/
+    project.json          # Project metadata (safe to commit)
+    credentials.json      # API token (gitignored)
+  .kiro/                  # (if Kiro was selected)
+    settings/mcp.json     # MCP server configuration
+    hooks/
+      thicket-recall.json # Searches world model before responding
+      thicket-record.json # Records knowledge after tasks
+  .agents/                # (if Antigravity was selected)
+    mcp_config.json       # MCP server configuration
+    hooks.json            # Hook definitions
+    scripts/
+      thicket_recall.sh   # Recall hook script
+      thicket_record.sh   # Record hook script
+```
