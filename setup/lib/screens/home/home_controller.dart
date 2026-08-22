@@ -1,18 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/ide_type.dart';
+import '../../services/config_generator_service.dart';
 import '../../services/google_auth_service.dart';
 import '../../services/thicket_api_service.dart';
 import 'home_route.dart';
 import 'home_view.dart';
 
 // Conditional imports for native-only services.
-import '../../services/file_writer_service.dart' if (dart.library.html) '../../services/file_writer_service_noop.dart';
+import '../../services/file_writer_service.dart'
+    if (dart.library.html) '../../services/file_writer_service_noop.dart';
 import '../../services/hook_installer_service.dart'
     if (dart.library.html) '../../services/hook_installer_service_noop.dart';
 import '../../services/mcp_installer_service.dart'
@@ -112,37 +113,6 @@ class HomeController extends State<HomeRoute> {
   /// Whether the app is running in a web browser.
   bool get isRunningOnWeb => kIsWeb;
 
-  /// The project configuration JSON string for the web completion step.
-  ///
-  /// On web, file writes are not possible so we provide copyable JSON instead.
-  String get projectConfigJson {
-    final RegistrationResult? result = _registrationResult;
-    if (result == null) return '';
-
-    final Map<String, dynamic> config = <String, dynamic>{
-      'projectId': result.projectId,
-      'projectName': _registeredProjectName ?? '',
-      'createdAt': DateTime.now().toUtc().toIso8601String(),
-      'storageMode': 'cloud',
-      'agentUrl': result.agentUrl,
-      'gcpProjectId': result.gcpProjectId ?? 'thicket-505111',
-    };
-
-    return const JsonEncoder.withIndent('  ').convert(config);
-  }
-
-  /// The credentials JSON string for the web completion step.
-  String get credentialsJson {
-    final RegistrationResult? result = _registrationResult;
-    if (result == null) return '';
-
-    final Map<String, dynamic> credentials = <String, dynamic>{
-      'apiToken': result.apiToken,
-    };
-
-    return const JsonEncoder.withIndent('  ').convert(credentials);
-  }
-
   // MARK: Actions
 
   /// Initiates the Google OAuth2 sign-in flow.
@@ -204,7 +174,8 @@ class HomeController extends State<HomeRoute> {
       }
 
       // Check if an existing Thicket project is already configured in this directory.
-      final Map<String, dynamic>? existing = FileWriterService.readExistingConfig(projectPath);
+      final Map<String, dynamic>? existing =
+          FileWriterService.readExistingConfig(projectPath);
       if (existing != null) {
         _existingProjectConfig = existing;
         setState(() {
@@ -222,12 +193,15 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result = await api.registerProject(projectName: projectName);
+      final ThicketApiService api =
+          ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result =
+          await api.registerProject(projectName: projectName);
       _registrationResult = result;
       _registeredProjectName = projectName;
 
-      // On desktop, write the local config files. On web, skip to completion.
+      // On desktop, write the local config files then go to IDE selection.
+      // On web, go to IDE selection (files will be shown on completion).
       if (!kIsWeb) {
         final String projectPath = projectPathController.text.trim();
         FileWriterService.writeProjectConfig(
@@ -235,17 +209,12 @@ class HomeController extends State<HomeRoute> {
           projectName: projectName,
           projectPath: projectPath,
         );
-
-        setState(() {
-          _isRegistering = false;
-          _currentStep = SetupStep.selectIde;
-        });
-      } else {
-        setState(() {
-          _isRegistering = false;
-          _currentStep = SetupStep.complete;
-        });
       }
+
+      setState(() {
+        _isRegistering = false;
+        _currentStep = SetupStep.selectIde;
+      });
     } catch (e) {
       setState(() {
         _isRegistering = false;
@@ -279,8 +248,10 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result = await api.joinProject(projectId: projectId);
+      final ThicketApiService api =
+          ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result =
+          await api.joinProject(projectId: projectId);
       _registrationResult = result;
 
       // Only write credentials — project.json already exists.
@@ -293,7 +264,7 @@ class HomeController extends State<HomeRoute> {
 
       setState(() {
         _isRegistering = false;
-        _currentStep = kIsWeb ? SetupStep.complete : SetupStep.selectIde;
+        _currentStep = SetupStep.selectIde;
       });
     } catch (e) {
       setState(() {
@@ -306,17 +277,26 @@ class HomeController extends State<HomeRoute> {
 
   /// Installs the Thicket MCP server configuration and agent hooks for the selected IDE.
   ///
-  /// First activates the Thicket MCP server package from GitHub using `dart pub global activate`, then writes the MCP
-  /// config file in the project directory at the path expected by [ide], and installs hooks that prompt the agent to
+  /// On desktop, activates the Thicket MCP server package from GitHub using `dart pub global activate`, then writes the
+  /// MCP config file in the project directory at the path expected by [ide], and installs hooks that prompt the agent to
   /// recall context on prompt submission and record knowledge after completing a task.
   ///
-  /// This method is only called on desktop platforms.
+  /// On web, stores the selected IDE and advances to the completion step where all configuration files are displayed for
+  /// manual download.
   Future<void> installMcpServer(IdeType ide) async {
-    final String projectPath = projectPathController.text.trim();
-
     setState(() {
       _error = null;
     });
+
+    if (kIsWeb) {
+      setState(() {
+        _selectedIde = ide;
+        _currentStep = SetupStep.complete;
+      });
+      return;
+    }
+
+    final String projectPath = projectPathController.text.trim();
 
     try {
       // Activate the Thicket MCP server globally from GitHub.
@@ -343,6 +323,34 @@ class HomeController extends State<HomeRoute> {
         _error = e.toString();
       });
     }
+  }
+
+  /// Returns all configuration file entries for display on the web completion step.
+  ///
+  /// Each entry is a pair of (relative file path, file content). Includes project config, credentials, MCP config, and
+  /// agent hooks for the selected IDE.
+  List<MapEntry<String, String>> get webConfigEntries {
+    final RegistrationResult? result = _registrationResult;
+    if (result == null || _selectedIde == null)
+      return <MapEntry<String, String>>[];
+
+    final List<MapEntry<String, String>> entries = <MapEntry<String, String>>[
+      MapEntry<String, String>(
+        '.thicket/project.json',
+        ConfigGeneratorService.projectConfigJson(
+          result: result,
+          projectName: _registeredProjectName ?? '',
+        ),
+      ),
+      MapEntry<String, String>(
+        '.thicket/credentials.json',
+        ConfigGeneratorService.credentialsJson(apiToken: result.apiToken),
+      ),
+      ConfigGeneratorService.mcpConfigEntry(_selectedIde!),
+      ...ConfigGeneratorService.hookEntries(_selectedIde!),
+    ];
+
+    return entries;
   }
 
   /// Copies the given text to the system clipboard and shows a snackbar confirmation.

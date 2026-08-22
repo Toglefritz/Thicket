@@ -5,8 +5,8 @@ part of '../home_view.dart';
 /// On desktop, displays the project ID, API token, agent URL, and the path to the MCP configuration file that was
 /// written for the selected IDE.
 ///
-/// On web, displays the configuration JSON that the user should copy into their project directory, since file-system
-/// writes are not available from the browser.
+/// On web, displays all configuration files (project config, credentials, MCP config, and agent hooks) that the user
+/// should copy into their project directory, since file-system writes are not available from the browser.
 class _CompleteStep extends StatelessWidget {
   const _CompleteStep({required this.state});
 
@@ -110,6 +110,8 @@ class _CompleteStep extends StatelessWidget {
   }
 
   Widget _buildWebCompletion(BuildContext context) {
+    final List<MapEntry<String, String>> entries = state.webConfigEntries;
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -135,25 +137,18 @@ class _CompleteStep extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          // project.json
-          Padding(
-            padding: const EdgeInsets.only(top: Insets.large),
-            child: _CopyableConfigCard(
-              title: '.thicket/project.json',
-              content: state.projectConfigJson,
-              onCopy: () => state.copyToClipboard(context, state.projectConfigJson),
+          // Render each configuration file as a copyable card.
+          ...entries.map(
+            (MapEntry<String, String> entry) => Padding(
+              padding: const EdgeInsets.only(top: Insets.medium),
+              child: _CopyableConfigCard(
+                title: entry.key,
+                content: entry.value,
+                onCopy: () => state.copyToClipboard(context, entry.value),
+              ),
             ),
           ),
-          // credentials.json
-          Padding(
-            padding: const EdgeInsets.only(top: Insets.medium),
-            child: _CopyableConfigCard(
-              title: '.thicket/credentials.json',
-              content: state.credentialsJson,
-              onCopy: () => state.copyToClipboard(context, state.credentialsJson),
-            ),
-          ),
-          // Reminder about gitignore
+          // Reminder about gitignore.
           Padding(
             padding: const EdgeInsets.only(top: Insets.medium),
             child: Card(
@@ -169,9 +164,12 @@ class _CompleteStep extends StatelessWidget {
                     const SizedBox(width: Insets.small),
                     Expanded(
                       child: Text(
-                        'Remember to add .thicket/credentials.json to your .gitignore.',
+                        'Remember to add .thicket/credentials.json to your .gitignore. '
+                        'Shell scripts (.sh) need to be made executable with chmod +x.',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer,
                         ),
                       ),
                     ),
@@ -181,7 +179,8 @@ class _CompleteStep extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(top: Insets.xLarge),
+            padding:
+                const EdgeInsets.only(top: Insets.xLarge, bottom: Insets.large),
             child: FilledButton(
               onPressed: state.reset,
               child: Text(context.l10n.buttonDone),
@@ -195,7 +194,7 @@ class _CompleteStep extends StatelessWidget {
 
 /// A card displaying a configuration file with a copy button.
 ///
-/// Used on the web completion step to show JSON that the user should save to their project.
+/// Used on the web completion step to show file contents that the user should save to their project.
 class _CopyableConfigCard extends StatelessWidget {
   const _CopyableConfigCard({
     required this.title,
@@ -206,7 +205,7 @@ class _CopyableConfigCard extends StatelessWidget {
   /// The file path shown as the card title.
   final String title;
 
-  /// The JSON content to display.
+  /// The file content to display.
   final String content;
 
   /// Callback when the copy button is pressed.
@@ -223,11 +222,13 @@ class _CopyableConfigCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontFamily: 'monospace',
-                      ),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontFamily: 'monospace',
+                        ),
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.copy, size: 20),
