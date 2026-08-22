@@ -8,3 +8,4 @@ setup/run_setup.command
 setup/creds.command
 deploy.command
 setup/run.command
+setup_cli/run.command
