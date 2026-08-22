@@ -54,8 +54,7 @@ class ThicketApiService {
       );
     }
 
-    final Map<String, dynamic> body =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
 
     final String? projectId = body['projectId'] as String?;
     final String? apiToken = body['apiToken'] as String?;
@@ -99,8 +98,7 @@ class ThicketApiService {
       );
     }
 
-    final Map<String, dynamic> body =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> body = jsonDecode(response.body) as Map<String, dynamic>;
 
     final String? returnedProjectId = body['projectId'] as String?;
     final String? apiToken = body['apiToken'] as String?;

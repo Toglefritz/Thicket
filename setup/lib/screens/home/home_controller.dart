@@ -1,17 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
+import 'package:flutter/services.dart';
 
 import '../../models/ide_type.dart';
 import '../../services/google_auth_service.dart';
-import '../../services/hook_installer_service.dart';
-import '../../services/mcp_installer_service.dart';
 import '../../services/thicket_api_service.dart';
 import 'home_route.dart';
 import 'home_view.dart';
+
+// Conditional imports for native-only services.
+import '../../services/file_writer_service.dart' if (dart.library.html) '../../services/file_writer_service_noop.dart';
+import '../../services/hook_installer_service.dart'
+    if (dart.library.html) '../../services/hook_installer_service_noop.dart';
+import '../../services/mcp_installer_service.dart'
+    if (dart.library.html) '../../services/mcp_installer_service_noop.dart';
 
 /// The discrete steps the wizard progresses through.
 enum SetupStep {
@@ -38,6 +43,8 @@ enum SetupStep {
 ///
 /// Orchestrates the project setup flow: sign in with Google, name the project (or join an existing one), register it
 /// with the Thicket backend, select an IDE for MCP integration, and install the MCP server configuration.
+///
+/// On web, file-system operations are skipped and the user is shown copyable configuration JSON instead.
 class HomeController extends State<HomeRoute> {
   /// The current wizard step.
   SetupStep _currentStep = SetupStep.signIn;
@@ -57,11 +64,14 @@ class HomeController extends State<HomeRoute> {
   /// Text controller for the project name input.
   final TextEditingController projectNameController = TextEditingController();
 
-  /// Text controller for the project directory path input.
+  /// Text controller for the project directory path input (desktop only).
   final TextEditingController projectPathController = TextEditingController();
 
   /// The registration result returned by the backend.
   RegistrationResult? _registrationResult;
+
+  /// The project name used during registration, stored for display in the web completion step.
+  String? _registeredProjectName;
 
   /// The IDE selected by the user for MCP configuration.
   IdeType? _selectedIde;
@@ -99,12 +109,46 @@ class HomeController extends State<HomeRoute> {
   /// The existing project configuration, available during the join flow.
   Map<String, dynamic>? get existingProjectConfig => _existingProjectConfig;
 
+  /// Whether the app is running in a web browser.
+  bool get isRunningOnWeb => kIsWeb;
+
+  /// The project configuration JSON string for the web completion step.
+  ///
+  /// On web, file writes are not possible so we provide copyable JSON instead.
+  String get projectConfigJson {
+    final RegistrationResult? result = _registrationResult;
+    if (result == null) return '';
+
+    final Map<String, dynamic> config = <String, dynamic>{
+      'projectId': result.projectId,
+      'projectName': _registeredProjectName ?? '',
+      'createdAt': DateTime.now().toUtc().toIso8601String(),
+      'storageMode': 'cloud',
+      'agentUrl': result.agentUrl,
+      'gcpProjectId': result.gcpProjectId ?? 'thicket-505111',
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(config);
+  }
+
+  /// The credentials JSON string for the web completion step.
+  String get credentialsJson {
+    final RegistrationResult? result = _registrationResult;
+    if (result == null) return '';
+
+    final Map<String, dynamic> credentials = <String, dynamic>{
+      'apiToken': result.apiToken,
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(credentials);
+  }
+
   // MARK: Actions
 
   /// Initiates the Google OAuth2 sign-in flow.
   ///
-  /// Opens the system browser to the Google consent page and starts a local HTTP server to receive the redirect. On
-  /// success, advances to the project naming step.
+  /// On desktop, opens the system browser to the Google consent page and starts a local HTTP server to receive the
+  /// redirect. On web, opens a popup for the implicit grant flow. On success, advances to the project naming step.
   Future<void> signIn() async {
     setState(() {
       _isSigningIn = true;
@@ -127,10 +171,12 @@ class HomeController extends State<HomeRoute> {
     }
   }
 
-  /// Registers the project with the Thicket backend and writes the local config.
+  /// Registers the project with the Thicket backend.
   ///
-  /// Validates that the project name and directory are not empty, sends the registration request, then writes
-  /// `.thicket/project.json` in the specified directory.
+  /// On desktop, validates that the project name and directory are not empty, sends the registration request, then
+  /// writes `.thicket/project.json` in the specified directory.
+  ///
+  /// On web, only the project name is required. The configuration is shown as copyable JSON on the completion step.
   Future<void> registerProject() async {
     final String projectName = projectNameController.text.trim();
     if (projectName.isEmpty) {
@@ -140,36 +186,32 @@ class HomeController extends State<HomeRoute> {
       return;
     }
 
-    final String projectPath = projectPathController.text.trim();
-    if (projectPath.isEmpty) {
-      setState(() {
-        _error = 'Please specify a project directory.';
-      });
-      return;
-    }
+    // On desktop, validate the project path.
+    if (!kIsWeb) {
+      final String projectPath = projectPathController.text.trim();
+      if (projectPath.isEmpty) {
+        setState(() {
+          _error = 'Please specify a project directory.';
+        });
+        return;
+      }
 
-    if (!Directory(projectPath).existsSync()) {
-      setState(() {
-        _error = 'Directory does not exist: $projectPath';
-      });
-      return;
-    }
+      if (!FileWriterService.directoryExists(projectPath)) {
+        setState(() {
+          _error = 'Directory does not exist: $projectPath';
+        });
+        return;
+      }
 
-    // Check if an existing Thicket project is already configured in this directory.
-    final File existingConfig = File(
-      p.join(projectPath, '.thicket', 'project.json'),
-    );
-    if (existingConfig.existsSync()) {
-      try {
-        final String content = existingConfig.readAsStringSync();
-        _existingProjectConfig = jsonDecode(content) as Map<String, dynamic>;
+      // Check if an existing Thicket project is already configured in this directory.
+      final Map<String, dynamic>? existing = FileWriterService.readExistingConfig(projectPath);
+      if (existing != null) {
+        _existingProjectConfig = existing;
         setState(() {
           _error = null;
           _currentStep = SetupStep.joinProject;
         });
         return;
-      } catch (_) {
-        // If the file is malformed, proceed with new registration.
       }
     }
 
@@ -180,19 +222,30 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api =
-          ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result =
-          await api.registerProject(projectName: projectName);
+      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result = await api.registerProject(projectName: projectName);
       _registrationResult = result;
+      _registeredProjectName = projectName;
 
-      // Write the local config file to the specified directory.
-      _writeProjectConfig(result, projectName, projectPath);
+      // On desktop, write the local config files. On web, skip to completion.
+      if (!kIsWeb) {
+        final String projectPath = projectPathController.text.trim();
+        FileWriterService.writeProjectConfig(
+          result: result,
+          projectName: projectName,
+          projectPath: projectPath,
+        );
 
-      setState(() {
-        _isRegistering = false;
-        _currentStep = SetupStep.selectIde;
-      });
+        setState(() {
+          _isRegistering = false;
+          _currentStep = SetupStep.selectIde;
+        });
+      } else {
+        setState(() {
+          _isRegistering = false;
+          _currentStep = SetupStep.complete;
+        });
+      }
     } catch (e) {
       setState(() {
         _isRegistering = false;
@@ -206,6 +259,8 @@ class HomeController extends State<HomeRoute> {
   ///
   /// Uses the project ID from the existing `.thicket/project.json` to authenticate with the backend and obtain a fresh
   /// token. Only writes `credentials.json`; the existing `project.json` is left untouched.
+  ///
+  /// This flow is only available on desktop where the existing config can be detected.
   Future<void> joinExistingProject() async {
     final String projectPath = projectPathController.text.trim();
     final String? projectId = _existingProjectConfig?['projectId'] as String?;
@@ -224,18 +279,21 @@ class HomeController extends State<HomeRoute> {
     });
 
     try {
-      final ThicketApiService api =
-          ThicketApiService(accessToken: _accessToken!);
-      final RegistrationResult result =
-          await api.joinProject(projectId: projectId);
+      final ThicketApiService api = ThicketApiService(accessToken: _accessToken!);
+      final RegistrationResult result = await api.joinProject(projectId: projectId);
       _registrationResult = result;
 
       // Only write credentials — project.json already exists.
-      _writeCredentials(result.apiToken, projectPath);
+      if (!kIsWeb) {
+        FileWriterService.writeCredentials(
+          apiToken: result.apiToken,
+          projectPath: projectPath,
+        );
+      }
 
       setState(() {
         _isRegistering = false;
-        _currentStep = SetupStep.selectIde;
+        _currentStep = kIsWeb ? SetupStep.complete : SetupStep.selectIde;
       });
     } catch (e) {
       setState(() {
@@ -251,6 +309,8 @@ class HomeController extends State<HomeRoute> {
   /// First activates the Thicket MCP server package from GitHub using `dart pub global activate`, then writes the MCP
   /// config file in the project directory at the path expected by [ide], and installs hooks that prompt the agent to
   /// recall context on prompt submission and record knowledge after completing a task.
+  ///
+  /// This method is only called on desktop platforms.
   Future<void> installMcpServer(IdeType ide) async {
     final String projectPath = projectPathController.text.trim();
 
@@ -285,6 +345,17 @@ class HomeController extends State<HomeRoute> {
     }
   }
 
+  /// Copies the given text to the system clipboard and shows a snackbar confirmation.
+  void copyToClipboard(BuildContext context, String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Copied to clipboard'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   /// Resets the wizard back to the initial sign-in step.
   ///
   /// Clears all state accumulated during the flow so the user can start fresh.
@@ -296,6 +367,7 @@ class HomeController extends State<HomeRoute> {
       _isSigningIn = false;
       _isRegistering = false;
       _registrationResult = null;
+      _registeredProjectName = null;
       _selectedIde = null;
       _mcpConfigPath = null;
       _existingProjectConfig = null;
@@ -309,79 +381,6 @@ class HomeController extends State<HomeRoute> {
     setState(() {
       _error = null;
     });
-  }
-
-  /// Writes `.thicket/project.json` and `.thicket/credentials.json` in the specified project directory.
-  ///
-  /// The project config contains non-sensitive metadata (project ID, name, agent URL) and is safe to commit. The
-  /// credentials file contains the API token and is automatically added to `.gitignore`.
-  void _writeProjectConfig(
-    RegistrationResult result,
-    String projectName,
-    String projectPath,
-  ) {
-    final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
-
-    if (!thicketDir.existsSync()) {
-      thicketDir.createSync(recursive: true);
-    }
-
-    // Write the non-sensitive project configuration.
-    final Map<String, dynamic> projectConfig = <String, dynamic>{
-      'projectId': result.projectId,
-      'projectName': projectName,
-      'createdAt': DateTime.now().toUtc().toIso8601String(),
-      'storageMode': 'cloud',
-      'agentUrl': result.agentUrl,
-      'gcpProjectId': result.gcpProjectId ?? 'thicket-505111',
-    };
-
-    final File projectFile = File(p.join(thicketDir.path, 'project.json'));
-    projectFile.writeAsStringSync(
-      const JsonEncoder.withIndent('  ').convert(projectConfig),
-    );
-
-    // Write credentials and update .gitignore.
-    _writeCredentials(result.apiToken, projectPath);
-  }
-
-  /// Writes `.thicket/credentials.json` with the given API token and ensures it is gitignored.
-  void _writeCredentials(String apiToken, String projectPath) {
-    final Directory thicketDir = Directory(p.join(projectPath, '.thicket'));
-
-    if (!thicketDir.existsSync()) {
-      thicketDir.createSync(recursive: true);
-    }
-
-    final Map<String, dynamic> credentials = <String, dynamic>{
-      'apiToken': apiToken,
-    };
-
-    final File credentialsFile =
-        File(p.join(thicketDir.path, 'credentials.json'));
-    credentialsFile.writeAsStringSync(
-      const JsonEncoder.withIndent('  ').convert(credentials),
-    );
-
-    _ensureGitignore(projectPath);
-  }
-
-  /// Appends `.thicket/credentials.json` to the project's `.gitignore` if not already present.
-  void _ensureGitignore(String projectPath) {
-    const String entry = '.thicket/credentials.json';
-    final File gitignore = File(p.join(projectPath, '.gitignore'));
-
-    if (gitignore.existsSync()) {
-      final String content = gitignore.readAsStringSync();
-      if (content.contains(entry)) {
-        return;
-      }
-      // Append with a preceding newline if the file doesn't end with one.
-      final String prefix = content.endsWith('\n') ? '' : '\n';
-      gitignore.writeAsStringSync('$prefix$entry\n', mode: FileMode.append);
-    } else {
-      gitignore.writeAsStringSync('$entry\n');
-    }
   }
 
   @override

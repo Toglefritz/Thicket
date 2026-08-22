@@ -17,6 +17,31 @@ import '../lib/src/genkit_setup.dart';
 import '../lib/src/join_handler.dart';
 import '../lib/src/registration_handler.dart';
 
+/// Middleware that adds CORS headers to all responses and handles OPTIONS preflight requests.
+///
+/// Allows requests from any origin since the backend authenticates via Bearer token rather than relying on origin
+/// restrictions.
+Middleware corsMiddleware() {
+  const Map<String, String> corsHeaders = <String, String>{
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Origin, Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+
+  return (Handler innerHandler) {
+    return (Request request) async {
+      // Handle preflight OPTIONS requests immediately.
+      if (request.method == 'OPTIONS') {
+        return Response.ok('', headers: corsHeaders);
+      }
+
+      final Response response = await innerHandler(request);
+      return response.change(headers: corsHeaders);
+    };
+  };
+}
+
 void main(List<String> args) async {
   final Genkit ai = initializeGenkit();
 
@@ -36,14 +61,16 @@ void main(List<String> args) async {
 
       if (source == null || eventType == null || thicketProjectId == null) {
         return Response.badRequest(
-            body:
-                'Missing required parameters: source, eventType, thicketProjectId');
+          body:
+              'Missing required parameters: source, eventType, thicketProjectId',
+        );
       }
 
       final String apiKey = Platform.environment['GEMINI_API_KEY'] ?? '';
       if (apiKey.isEmpty) {
         return Response.internalServerError(
-            body: 'GEMINI_API_KEY environment variable is not set');
+          body: 'GEMINI_API_KEY environment variable is not set',
+        );
       }
 
       try {
@@ -69,8 +96,11 @@ void main(List<String> args) async {
   final String portStr = Platform.environment['PORT'] ?? '8080';
   final int port = int.tryParse(portStr) ?? 8080;
 
+  final Handler handler =
+      const Pipeline().addMiddleware(corsMiddleware()).addHandler(router.call);
+
   final HttpServer server =
-      await io.serve(router.call, InternetAddress.anyIPv4, port);
+      await io.serve(handler, InternetAddress.anyIPv4, port);
 
   print('Thicket Agent listening on port ${server.port}');
 }

@@ -19,7 +19,8 @@ Future<Response> handleProjectRegistration(Request request) async {
     final String? projectName = body['projectName'] as String?;
     if (projectName == null || projectName.isEmpty) {
       return Response.badRequest(
-          body: 'Missing required parameter: projectName');
+        body: 'Missing required parameter: projectName',
+      );
     }
 
     final IdGenerator generator = IdGenerator();
@@ -29,7 +30,8 @@ Future<Response> handleProjectRegistration(Request request) async {
     final String gcpProjectId = Platform.environment['GCP_PROJECT_ID'] ?? '';
     if (gcpProjectId.isEmpty) {
       return Response.internalServerError(
-          body: 'GCP_PROJECT_ID environment variable is not set');
+        body: 'GCP_PROJECT_ID environment variable is not set',
+      );
     }
 
     String? accessToken = Platform.environment['GOOGLE_ACCESS_TOKEN'];

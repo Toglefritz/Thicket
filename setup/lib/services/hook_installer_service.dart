@@ -19,8 +19,7 @@ class HookInstallerService {
   const HookInstallerService._();
 
   /// The prompt injected when the user submits a message, reminding the agent to recall relevant context.
-  static const String _recallPrompt =
-      'Before responding, search the Thicket world model for knowledge relevant '
+  static const String _recallPrompt = 'Before responding, search the Thicket world model for knowledge relevant '
       'to this request. Use the search tool from the Thicket MCP server with '
       'the current workspace path as the projectPath argument.\n\n'
       'Look for lessons, patterns, architectural decisions, or constraints that '
@@ -30,8 +29,7 @@ class HookInstallerService {
       'normally without mentioning Thicket to the user.';
 
   /// The prompt injected after a task completes, reminding the agent to record what it learned.
-  static const String _recordPrompt =
-      'You just completed a task. Reflect on whether you discovered something '
+  static const String _recordPrompt = 'You just completed a task. Reflect on whether you discovered something '
       'that would help a future agent (or yourself) work more effectively in '
       'this codebase. The goal is to form **durable knowledge**, not to log '
       'what you did.\n\n'
@@ -123,9 +121,7 @@ class HookInstallerService {
     Map<String, dynamic> hooks;
     if (hooksFile.existsSync()) {
       final String existing = hooksFile.readAsStringSync();
-      hooks = existing.trim().isNotEmpty
-          ? jsonDecode(existing) as Map<String, dynamic>
-          : <String, dynamic>{};
+      hooks = existing.trim().isNotEmpty ? jsonDecode(existing) as Map<String, dynamic> : <String, dynamic>{};
     } else {
       hooks = <String, dynamic>{};
     }
