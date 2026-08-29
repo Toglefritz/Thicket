@@ -172,8 +172,8 @@ A terminal-based wizard that performs the same steps and writes all files direct
    ```
 2. Set your OAuth credentials and run:
    ```bash
-   export GOOGLE_OAUTH_CLIENT_ID=1081534978416-r154ltgn28e9gq4qgsctbsdvntrvhuro.apps.googleusercontent.com
-   export GOOGLE_OAUTH_CLIENT_SECRET=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
+   export GOOGLE_OAUTH_CLIENT_ID=987654321-abc123abc456abc789.apps.googleusercontent.com
+   export GOOGLE_OAUTH_CLIENT_SECRET=GCP123-FAKEOAUTHKEY_AbCd123EfgH
    dart run bin/setup_cli.dart
    ```
 3. Follow the interactive prompts:
